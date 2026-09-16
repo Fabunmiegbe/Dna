@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reference datasets — GeneMatch</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body class="font-sans bg-paper text-ink antialiased">
+
+<header class="border-b border-line bg-white">
+  <div class="max-w-4xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="/dashboard.html" class="flex items-center gap-2">
+      <svg width="24" height="24" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 2C6 7 20 7 20 13C20 19 6 19 6 24" stroke="#1F6F67" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M20 2C20 7 6 7 6 13C6 19 20 19 20 24" stroke="#10202E" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>
+      </svg>
+      <span class="font-serif text-lg text-ink">GeneMatch</span>
+    </a>
+    <a href="/dashboard.html" class="text-sm text-slate hover:text-teal">&larr; Dashboard</a>
+  </div>
+</header>
+
+<div id="auth-loading" class="max-w-4xl mx-auto px-5 sm:px-8 py-16 text-slate text-sm">Checking your session…</div>
+<div id="not-authorized" class="hidden max-w-4xl mx-auto px-5 sm:px-8 py-16">
+  <p class="font-serif text-xl mb-2">Not available</p>
+  <p class="text-slate text-[15px]">Reference datasets are managed by laboratory admins, analysts, and super admins.</p>
+</div>
+
+<main id="content" class="hidden max-w-4xl mx-auto px-5 sm:px-8 py-16">
+  <p class="specimen-tag inline-block mb-3">REFERENCE DATASETS</p>
+  <h1 class="font-serif text-3xl leading-tight mb-3">Population allele frequencies</h1>
+  <p class="text-slate text-[15px] mb-10 max-w-xl">These frequencies power the paternity index calculation in profile comparisons. Enter values from a validated, published population dataset — never placeholder numbers. Once created, a dataset can't be edited; a correction means creating a new one, so a past calculation always points at frequencies that couldn't have changed underneath it.</p>
+
+  <div class="border border-line bg-white rounded-sm p-6 sm:p-8 mb-12">
+    <p class="font-serif text-lg mb-5">Add a dataset</p>
+    <form id="dataset-form" class="space-y-5">
+      <div class="grid sm:grid-cols-2 gap-5">
+        <div>
+          <label class="block text-sm text-slate mb-1.5">Name</label>
+          <input id="ds-name" type="text" required placeholder="e.g. NIST US Caucasian STR frequencies (2023)" class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+        </div>
+        <div>
+          <label class="block text-sm text-slate mb-1.5">Population group</label>
+          <input id="ds-population" type="text" placeholder="e.g. US Caucasian" class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm text-slate mb-1.5">Source citation</label>
+        <input id="ds-citation" type="text" required placeholder="e.g. Butler et al., NIST STRBase, 2023" class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+      </div>
+
+      <div>
+        <label class="block text-sm text-slate mb-2">Frequencies</label>
+        <div id="freq-rows" class="space-y-2"></div>
+        <button type="button" id="add-row" class="text-sm text-teal hover:text-teal-dark mt-2">+ Add row</button>
+      </div>
+
+      <p id="dataset-error" class="text-sm text-fail hidden"></p>
+      <button type="submit" class="bg-ink text-paper px-6 py-3 rounded-sm text-[15px] hover:bg-teal-dark transition-colors">Save dataset</button>
+    </form>
+  </div>
+
+  <p class="font-serif text-xl mb-4">Existing datasets</p>
+  <div id="datasets-list" class="space-y-4"></div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="/assets/firebase-config.js"></script>
+<script src="/assets/auth.js"></script>
+<script src="/assets/case-data.js"></script>
+<script src="/assets/profile-import.js"></script>
+<script src="/assets/comparison-engine.js"></script>
+<script>
+  const ANALYST_ROLES = ['scientist_analyst', 'laboratory_admin', 'super_admin'];
+
+  function addFreqRow(locus, allele, freq) {
+    const row = document.createElement('div');
+    row.className = 'grid grid-cols-[1fr_1fr_1fr_auto] gap-2';
+    row.innerHTML = `
+      <input placeholder="Locus (e.g. D3S1358)" value="${locus || ''}" class="freq-locus border border-line rounded-sm px-2.5 py-2 text-[13.5px]" />
+      <input placeholder="Allele (e.g. 15)" value="${allele || ''}" class="freq-allele border border-line rounded-sm px-2.5 py-2 text-[13.5px]" />
+      <input placeholder="Frequency (e.g. 0.21)" value="${freq || ''}" type="number" step="any" min="0" max="1" class="freq-value border border-line rounded-sm px-2.5 py-2 text-[13.5px]" />
+      <button type="button" class="remove-row text-slate hover:text-fail px-2">&times;</button>
+    `;
+    row.querySelector('.remove-row').addEventListener('click', () => row.remove());
+    document.getElementById('freq-rows').appendChild(row);
+  }
+
+  document.getElementById('add-row').addEventListener('click', () => addFreqRow());
+
+  async function renderDatasets() {
+    const datasets = await listReferenceDatasets();
+    const listEl = document.getElementById('datasets-list');
+    if (!datasets.length) {
+      listEl.innerHTML = '<p class="text-slate text-[14.5px]">No reference datasets yet.</p>';
+      return;
+    }
+    listEl.innerHTML = datasets.map((d) => {
+      const locusCount = Object.keys(d.frequencies || {}).length;
+      return `
+        <div class="border border-line bg-white rounded-sm p-5">
+          <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
+            <p class="font-serif text-lg">${d.name}</p>
+            <span class="specimen-tag">${d.datasetId}</span>
+          </div>
+          <p class="text-sm text-slate mb-1">${d.populationGroup || 'Population not specified'} &middot; ${locusCount} loci</p>
+          <p class="text-xs text-slate">Source: ${d.sourceCitation}</p>
+        </div>
+      `;
+    }).join('');
+  }
+
+  requireAuth((user, profile) => {
+    const role = (profile && profile.role) || 'customer';
+    document.getElementById('auth-loading').classList.add('hidden');
+    if (!ANALYST_ROLES.includes(role)) {
+      document.getElementById('not-authorized').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('content').classList.remove('hidden');
+    addFreqRow();
+    renderDatasets();
+
+    document.getElementById('dataset-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById('dataset-error');
+      errorEl.classList.add('hidden');
+
+      const frequencies = {};
+      document.querySelectorAll('#freq-rows > div').forEach((row) => {
+        const locus = row.querySelector('.freq-locus').value.trim();
+        const allele = row.querySelector('.freq-allele').value.trim();
+        const value = parseFloat(row.querySelector('.freq-value').value);
+        if (!locus || !allele || isNaN(value)) return;
+        frequencies[locus] = frequencies[locus] || {};
+        frequencies[locus][allele] = value;
+      });
+      if (!Object.keys(frequencies).length) {
+        errorEl.textContent = 'Add at least one locus/allele/frequency row.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        await createReferenceDataset({
+          name: document.getElementById('ds-name').value.trim(),
+          populationGroup: document.getElementById('ds-population').value.trim(),
+          sourceCitation: document.getElementById('ds-citation').value.trim(),
+          frequencies,
+          actorUid: user.uid,
+        });
+        document.getElementById('dataset-form').reset();
+        document.getElementById('freq-rows').innerHTML = '';
+        addFreqRow();
+        await renderDatasets();
+      } catch (err) {
+        errorEl.textContent = err.message || 'Could not save dataset.';
+        errorEl.classList.remove('hidden');
+      }
+    });
+  });
+</script>
+</body>
+</html>

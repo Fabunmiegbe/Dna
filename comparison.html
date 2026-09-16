@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comparison — GeneMatch</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body class="font-sans bg-paper text-ink antialiased">
+
+<header class="border-b border-line bg-white">
+  <div class="max-w-4xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="/dashboard.html" class="flex items-center gap-2">
+      <svg width="24" height="24" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 2C6 7 20 7 20 13C20 19 6 19 6 24" stroke="#1F6F67" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M20 2C20 7 6 7 6 13C6 19 20 19 20 24" stroke="#10202E" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>
+      </svg>
+      <span class="font-serif text-lg text-ink">GeneMatch</span>
+    </a>
+    <a href="#" id="back-to-case" class="text-sm text-slate hover:text-teal">&larr; Back to case</a>
+  </div>
+</header>
+
+<div id="auth-loading" class="max-w-4xl mx-auto px-5 sm:px-8 py-16 text-slate text-sm">Checking your session…</div>
+<div id="not-found" class="hidden max-w-4xl mx-auto px-5 sm:px-8 py-16">
+  <p class="font-serif text-xl mb-2">Comparison not found</p>
+  <p class="text-slate text-[15px]">Either this comparison doesn't exist, or your role doesn't include access to it.</p>
+</div>
+
+<main id="content" class="hidden max-w-4xl mx-auto px-5 sm:px-8 py-10">
+  <div class="flex items-center justify-between flex-wrap gap-4 mb-2">
+    <p class="specimen-tag" id="comparison-id-tag"></p>
+    <span id="review-badge" class="text-sm font-medium"></span>
+  </div>
+  <h1 class="font-serif text-3xl mb-1 capitalize" id="hypothesis-title"></h1>
+  <p class="text-slate text-sm mb-8">
+    <span id="sample-a" class="font-mono"></span> vs <span id="sample-b" class="font-mono"></span>
+  </p>
+
+  <div class="border border-line bg-white rounded-sm p-5 sm:p-6 mb-6">
+    <p class="font-serif text-lg mb-3">Result</p>
+    <p id="exclusion-line" class="text-[15px] mb-4"></p>
+    <div class="grid grid-cols-4 gap-4 text-center text-[13.5px]">
+      <div><p class="font-serif text-xl" id="m-informative">—</p><p class="text-slate">Informative</p></div>
+      <div><p class="font-serif text-xl status-ok" id="m-match">—</p><p class="text-slate">Match</p></div>
+      <div><p class="font-serif text-xl status-fail" id="m-mismatch">—</p><p class="text-slate">Mismatch</p></div>
+      <div><p class="font-serif text-xl" id="m-missing">—</p><p class="text-slate">Missing</p></div>
+    </div>
+  </div>
+
+  <div id="stats-panel" class="border border-line bg-white rounded-sm p-5 sm:p-6 mb-6"></div>
+
+  <p class="font-serif text-xl mb-4">Markers</p>
+  <div class="border border-line bg-white rounded-sm overflow-x-auto mb-10">
+    <table class="w-full text-[13.5px]">
+      <thead>
+        <tr class="border-b border-line text-left text-slate">
+          <th class="px-4 py-3 font-normal">Marker</th>
+          <th class="px-4 py-3 font-normal">Genotype A</th>
+          <th class="px-4 py-3 font-normal">Genotype B</th>
+          <th class="px-4 py-3 font-normal">Status</th>
+        </tr>
+      </thead>
+      <tbody id="markers-body"></tbody>
+    </table>
+  </div>
+
+  <section class="border border-line bg-white rounded-sm p-5 sm:p-6 mb-6">
+    <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
+      <p class="font-serif text-lg">Scientific review</p>
+    </div>
+    <p id="review-note" class="text-[13.5px] text-slate mb-4"></p>
+    <form id="review-form" class="hidden grid sm:grid-cols-[1fr_auto] gap-3 items-start border-t border-line pt-4">
+      <textarea id="review-notes" rows="2" required placeholder="Reviewer note (required)" class="w-full border border-line rounded-sm px-3 py-2 text-[14px] focus:border-teal outline-none"></textarea>
+      <button type="submit" class="bg-ink text-paper px-5 py-2.5 rounded-sm text-[14.5px] hover:bg-teal-dark transition-colors self-end">Mark reviewed</button>
+    </form>
+    <p id="review-error" class="hidden text-sm text-fail mt-2"></p>
+    <div id="review-history" class="hidden mt-4 pt-4 border-t border-line text-[13.5px]"></div>
+  </section>
+
+  <p class="text-xs text-slate max-w-xl">Method: <span id="meta-method"></span>. Calculation version <span id="meta-version" class="font-mono"></span>, run <span id="meta-date"></span>. This result reflects the assumptions and reference dataset described above and has not undergone independent scientific validation (a later platform phase). It should not be used for legal, custody, immigration, or other high-stakes determinations without review by a qualified forensic geneticist under your jurisdiction's accreditation requirements.</p>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="/assets/firebase-config.js"></script>
+<script src="/assets/auth.js"></script>
+<script src="/assets/case-data.js"></script>
+<script src="/assets/profile-import.js"></script>
+<script src="/assets/comparison-engine.js"></script>
+<script>
+  const STATUS_LABEL = { match: 'Match', partial_match: 'Partial match', mismatch: 'Mismatch', missing_in_a: 'Missing in A', missing_in_b: 'Missing in B' };
+  const STATUS_CLASS = { match: 'status-ok', partial_match: 'status-warn', mismatch: 'status-fail', missing_in_a: 'text-slate', missing_in_b: 'text-slate' };
+  const EXCLUSION_TEXT = {
+    excluded: { label: 'Excluded', cls: 'status-fail', desc: 'Two or more independent marker mismatches — genetically inconsistent with the tested relationship.' },
+    inconclusive: { label: 'Inconclusive', cls: 'status-warn', desc: 'One marker mismatch — could reflect a mutation rather than a true exclusion. Not automatically excluded; requires analyst evaluation.' },
+    not_excluded: { label: 'Not excluded', cls: 'status-ok', desc: 'No marker mismatches — genetically consistent with the tested relationship, based on the markers compared.' },
+    not_applicable: { label: 'N/A', cls: 'text-slate', desc: 'Exclusion analysis applies to parent-child comparisons only.' },
+  };
+  const QC_REVIEWER_ROLES = ['reviewer', 'scientist_analyst', 'laboratory_admin', 'super_admin'];
+
+  const params = new URLSearchParams(window.location.search);
+  const comparisonId = params.get('id');
+
+  requireAuth(async (user, profile) => {
+    const role = (profile && profile.role) || 'customer';
+    const isReviewer = QC_REVIEWER_ROLES.includes(role);
+    document.getElementById('auth-loading').classList.add('hidden');
+
+    if (role === 'customer' || !comparisonId) {
+      document.getElementById('not-found').classList.remove('hidden');
+      return;
+    }
+
+    const c = await getComparison(comparisonId);
+    if (!c) {
+      document.getElementById('not-found').classList.remove('hidden');
+      return;
+    }
+
+    document.getElementById('back-to-case').href = '/case.html?id=' + encodeURIComponent(c.caseId);
+    document.getElementById('content').classList.remove('hidden');
+    document.getElementById('comparison-id-tag').textContent = 'COMPARISON ' + c.comparisonId;
+    document.getElementById('hypothesis-title').textContent = c.hypothesis.replace(/_/g, ' ');
+    document.getElementById('sample-a').textContent = c.sampleAId;
+    document.getElementById('sample-b').textContent = c.sampleBId;
+
+    const reviewBadge = document.getElementById('review-badge');
+    reviewBadge.textContent = c.reviewStatus === 'reviewed' ? 'Reviewed' : 'Pending review';
+    reviewBadge.className = 'text-sm font-medium ' + (c.reviewStatus === 'reviewed' ? 'status-ok' : 'status-warn');
+
+    const ex = EXCLUSION_TEXT[c.exclusionResult] || EXCLUSION_TEXT.not_applicable;
+    document.getElementById('exclusion-line').innerHTML = `<span class="${ex.cls} font-medium">${ex.label}</span> — <span class="text-slate">${ex.desc}</span>`;
+
+    document.getElementById('m-informative').textContent = c.summary.informativeMarkers;
+    document.getElementById('m-match').textContent = c.summary.matchedMarkers;
+    document.getElementById('m-mismatch').textContent = c.summary.mismatchMarkers;
+    document.getElementById('m-missing').textContent = c.summary.missingMarkers;
+
+    // Statistics panel
+    const statsEl = document.getElementById('stats-panel');
+    const stats = c.statistics;
+    if (!stats.applicable) {
+      statsEl.innerHTML = `<p class="font-serif text-lg mb-2">Statistics</p><p class="text-[13.5px] text-slate">${stats.note}</p>`;
+    } else {
+      statsEl.innerHTML = `
+        <p class="font-serif text-lg mb-3">Statistics</p>
+        <div class="grid sm:grid-cols-3 gap-4 mb-4 text-[13.5px]">
+          <div><p class="text-xs text-slate mb-1">Combined paternity index</p><p class="font-mono">${stats.combinedPI !== null ? stats.combinedPI.toLocaleString(undefined, { maximumSignificantDigits: 4 }) : 'Not computable'}</p></div>
+          <div><p class="text-xs text-slate mb-1">Probability of relationship</p><p class="font-mono">${stats.probabilityOfRelationship !== null ? stats.probabilityOfRelationship.toFixed(3) + '%' : '—'}</p></div>
+          <div><p class="text-xs text-slate mb-1">Loci used</p><p class="font-mono">${stats.lociUsed} of ${stats.lociTotal}</p></div>
+        </div>
+        <p class="text-[13.5px] text-slate mb-3">Results are stated as consistent with the tested relationship under the assumptions below, not as absolute certainty. Prior probability: ${stats.priorProbability}.</p>
+        <details class="text-[13px]">
+          <summary class="cursor-pointer text-teal hover:text-teal-dark">Per-locus detail</summary>
+          <ul class="mt-2 space-y-1">
+            ${stats.perLocus.map((l) => `<li><span class="font-mono">${l.markerId}</span>: ${typeof l.pi === 'number' ? 'PI = ' + l.pi.toLocaleString(undefined, { maximumSignificantDigits: 4 }) : `<span class="text-slate">${l.note}</span>`}</li>`).join('')}
+          </ul>
+        </details>
+      `;
+    }
+
+    document.getElementById('markers-body').innerHTML = c.markerResults.map((m) => `
+      <tr class="border-b border-line last:border-0">
+        <td class="px-4 py-2.5 font-mono">${m.markerId}</td>
+        <td class="px-4 py-2.5 font-mono">${m.genotypeA ? m.genotypeA.join(' / ') : '—'}</td>
+        <td class="px-4 py-2.5 font-mono">${m.genotypeB ? m.genotypeB.join(' / ') : '—'}</td>
+        <td class="px-4 py-2.5 ${STATUS_CLASS[m.status] || ''}">${STATUS_LABEL[m.status] || m.status}</td>
+      </tr>
+    `).join('');
+
+    // Review section
+    const noteEl = document.getElementById('review-note');
+    if (c.reviewStatus === 'reviewed') {
+      noteEl.textContent = 'This comparison has been reviewed — see history below.';
+      const historyEl = document.getElementById('review-history');
+      historyEl.classList.remove('hidden');
+      const when = c.reviewedAt && c.reviewedAt.toDate ? c.reviewedAt.toDate().toLocaleString() : 'just now';
+      historyEl.innerHTML = `<p class="status-ok">Reviewed — ${when}</p><p class="text-ink mt-1">${c.reviewNotes}</p>`;
+    } else if (isReviewer) {
+      noteEl.textContent = 'Confirm the marker comparison and statistics above, then record your review.';
+      const form = document.getElementById('review-form');
+      form.classList.remove('hidden');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const errorEl = document.getElementById('review-error');
+        errorEl.classList.add('hidden');
+        try {
+          await submitComparisonReview({ comparisonId, notes: document.getElementById('review-notes').value, actorUid: user.uid });
+          window.location.reload();
+        } catch (err) {
+          errorEl.textContent = err.message || 'Could not submit review.';
+          errorEl.classList.remove('hidden');
+        }
+      });
+    } else {
+      noteEl.textContent = 'This comparison is awaiting review by a qualified reviewer, analyst, laboratory admin, or super admin.';
+    }
+
+    document.getElementById('meta-method').textContent = c.statistics.applicable ? c.statistics.method : 'Marker comparison only — no statistical method applied for this relationship type';
+    document.getElementById('meta-version').textContent = c.calculationVersion;
+    document.getElementById('meta-date').textContent = c.createdAt && c.createdAt.toDate ? c.createdAt.toDate().toLocaleString() : 'just now';
+  });
+</script>
+</body>
+</html>
