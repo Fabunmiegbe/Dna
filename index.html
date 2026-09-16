@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>GeneMatch — Genetic relationship analysis software for laboratories</title>
+<meta name="description" content="GeneMatch is case management, data ingestion, and comparison software for genetic profiles produced by accredited laboratories. GeneMatch does not perform DNA testing." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink: '#10202E',
+          'ink-2': '#1C3145',
+          paper: '#F5F6F3',
+          teal: { DEFAULT: '#1F6F67', dark: '#16504A' },
+          slate: '#48607A',
+          line: '#DADFDC',
+          ok: '#2E7D5B',
+          warn: '#B8863A',
+          fail: '#A6362C',
+        },
+        fontFamily: {
+          serif: ['Newsreader', 'Georgia', 'serif'],
+          sans: ['Inter', 'ui-sans-serif', 'sans-serif'],
+          mono: ['IBM Plex Mono', 'ui-monospace', 'monospace'],
+        },
+      },
+    },
+  };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body data-page="index" class="font-sans bg-paper text-ink antialiased">
+
+<div id="site-header"></div>
+
+<main>
+  <!-- HERO -->
+  <section class="max-w-6xl mx-auto px-5 sm:px-8 pt-14 pb-16 grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
+    <div>
+      <p class="specimen-tag inline-block mb-6">CASE GM-2026-000001 · STATUS: UNDER REVIEW</p>
+      <h1 class="font-serif text-[2.6rem] sm:text-5xl leading-[1.08] text-ink max-w-xl">
+        Turn laboratory genetic data into a relationship you can review, not a percentage you have to trust.
+      </h1>
+      <p class="mt-6 text-lg text-slate max-w-lg leading-relaxed">
+        GeneMatch is the case management, data ingestion, and comparison software that sits behind a genetic relationship test. Every result traces back to a validated laboratory instrument, a documented method, and a named reviewer.
+      </p>
+      <div class="mt-8 flex flex-wrap gap-4">
+        <a href="/request-test.html" class="bg-ink text-paper px-6 py-3 rounded-sm text-[15px] hover:bg-teal-dark transition-colors">Request a test</a>
+        <a href="/how-it-works.html" class="border border-line px-6 py-3 rounded-sm text-[15px] hover:border-teal hover:text-teal transition-colors">See how it works</a>
+      </div>
+      <p class="mt-8 text-sm text-slate max-w-lg leading-relaxed">
+        GeneMatch does not read DNA from a photograph, a fingerprint, or a camera. Genetic profiles are produced by accredited laboratories using validated testing equipment, then transferred to GeneMatch for comparison and reporting.
+      </p>
+    </div>
+
+    <div class="border border-line bg-white rounded-sm p-6">
+      <div class="flex items-center justify-between mb-4">
+        <p class="font-serif text-lg">Marker comparison</p>
+        <span class="specimen-tag">21 loci</span>
+      </div>
+      <div class="marker-row mb-2" aria-hidden="true">
+        <div class="marker-cell" data-state="match"></div>
+        <div class="marker-cell" data-state="match"></div>
+        <div class="marker-cell" data-state="match"></div>
+        <div class="marker-cell" data-state="review"></div>
+        <div class="marker-cell" data-state="match"></div>
+        <div class="marker-cell" data-state="match"></div>
+        <div class="marker-cell" data-state="pending"></div>
+        <div class="marker-cell" data-state="match"></div>
+        <div class="marker-cell" data-state="match"></div>
+        <div class="marker-cell" data-state="match"></div>
+      </div>
+      <div class="flex gap-4 text-xs text-slate mt-3">
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 inline-block rounded-sm" style="background:#1F6F67"></span>Concordant</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 inline-block rounded-sm" style="background:#B8863A"></span>Needs review</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 inline-block rounded-sm" style="background:#DADFDC"></span>Pending import</span>
+      </div>
+      <p class="text-xs text-slate mt-5 pt-4 border-t border-line leading-relaxed">Illustrative interface only. No genetic data is shown or processed on this page.</p>
+    </div>
+  </section>
+
+  <!-- WHAT IT IS -->
+  <section class="border-t border-line bg-white">
+    <div class="max-w-6xl mx-auto px-5 sm:px-8 py-16 grid md:grid-cols-3 gap-10">
+      <div>
+        <p class="font-serif text-xl mb-2">Built around the laboratory, not instead of it</p>
+        <p class="text-slate leading-relaxed text-[15px]">Samples are collected and processed with validated laboratory equipment. GeneMatch begins once a genetic profile exists, handling everything from import to report.</p>
+      </div>
+      <div>
+        <p class="font-serif text-xl mb-2">Chain of custody, end to end</p>
+        <p class="text-slate leading-relaxed text-[15px]">Every transfer, upload, and review is timestamped and attributed to an authenticated user, from sample collection through report delivery.</p>
+      </div>
+      <div>
+        <p class="font-serif text-xl mb-2">Statistics, not slogans</p>
+        <p class="text-slate leading-relaxed text-[15px]">Results are reported using the statistical methodology appropriate to the test performed, with the method, dataset, and reviewer disclosed alongside the outcome.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT FLOWS -->
+  <section class="max-w-6xl mx-auto px-5 sm:px-8 py-16">
+    <p class="font-serif text-2xl mb-8">From sample to report</p>
+    <div class="grid sm:grid-cols-5 gap-6 text-[14.5px]">
+      <div class="border-t-2 border-teal pt-3">
+        <p class="text-ink font-medium mb-1">Sample collection</p>
+        <p class="text-slate leading-relaxed">A trained collector registers the sample under a unique ID and consent record.</p>
+      </div>
+      <div class="border-t-2 border-teal pt-3">
+        <p class="text-ink font-medium mb-1">Laboratory testing</p>
+        <p class="text-slate leading-relaxed">Accredited equipment extracts and reads the sample, producing a genetic profile.</p>
+      </div>
+      <div class="border-t-2 border-teal pt-3">
+        <p class="text-ink font-medium mb-1">Secure transfer</p>
+        <p class="text-slate leading-relaxed">The profile is imported into GeneMatch through an authenticated, validated channel.</p>
+      </div>
+      <div class="border-t-2 border-teal pt-3">
+        <p class="text-ink font-medium mb-1">Comparison &amp; review</p>
+        <p class="text-slate leading-relaxed">GeneMatch compares profiles and a qualified analyst reviews the statistical result.</p>
+      </div>
+      <div class="border-t-2 border-slate pt-3">
+        <p class="text-ink font-medium mb-1">Report</p>
+        <p class="text-slate leading-relaxed">A verifiable report is issued, stating method, limitations, and reviewer.</p>
+      </div>
+    </div>
+    <a href="/how-it-works.html" class="inline-block mt-8 text-teal hover:text-teal-dark text-[15px]">Read the full process</a>
+  </section>
+
+  <!-- FOR LABS -->
+  <section class="border-t border-line bg-ink text-paper">
+    <div class="max-w-6xl mx-auto px-5 sm:px-8 py-16 grid md:grid-cols-2 gap-10 items-center">
+      <div>
+        <p class="font-serif text-2xl mb-4">For laboratories and case managers</p>
+        <p class="text-white/70 leading-relaxed max-w-md">Role-based dashboards for technicians, analysts, reviewers, and administrators. Import formats are handled through instrument adapters, so your existing equipment output doesn't need to change.</p>
+      </div>
+      <div class="flex gap-4">
+        <a href="/laboratory-partners.html" class="border border-white/30 px-6 py-3 rounded-sm text-[15px] hover:border-white transition-colors">Laboratory partners</a>
+        <a href="/login.html" class="bg-teal px-6 py-3 rounded-sm text-[15px] hover:bg-teal-dark transition-colors">Staff log in</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+<script src="/assets/layout.js"></script>
+</body>
+</html>

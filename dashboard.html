@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard — GeneMatch</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body class="font-sans bg-paper text-ink antialiased">
+
+<!-- Dashboard uses its own header, not the marketing site partial, since the
+     authenticated shell needs a different nav (roles, sign out) rather than
+     the public site's marketing links. -->
+<header class="border-b border-line bg-white">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="/index.html" class="flex items-center gap-2">
+      <svg width="24" height="24" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 2C6 7 20 7 20 13C20 19 6 19 6 24" stroke="#1F6F67" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M20 2C20 7 6 7 6 13C6 19 20 19 20 24" stroke="#10202E" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>
+      </svg>
+      <span class="font-serif text-lg text-ink">GeneMatch</span>
+    </a>
+    <div class="flex items-center gap-4">
+      <div id="user-chip" class="hidden text-right">
+        <p id="user-name" class="text-sm text-ink leading-tight"></p>
+        <p id="user-role" class="text-xs text-slate leading-tight specimen-tag mt-1"></p>
+      </div>
+      <button id="logout-btn" class="text-sm border border-line rounded-sm px-3 py-2 hover:border-teal hover:text-teal transition-colors">Log out</button>
+    </div>
+  </div>
+</header>
+
+<div id="auth-loading" class="max-w-6xl mx-auto px-5 sm:px-8 py-16 text-slate text-sm">Checking your session…</div>
+
+<main id="dashboard-content" class="hidden max-w-6xl mx-auto px-5 sm:px-8 py-10 grid md:grid-cols-[220px_1fr] gap-10">
+  <!-- Role-gated side nav. Sections hide themselves if the signed-in role
+       doesn't include them — see the ROLE_NAV map in the script below. -->
+  <nav class="space-y-1 text-[14.5px]" id="dashboard-nav">
+    <a href="#" data-nav="overview" class="block px-3 py-2 rounded-sm bg-ink text-paper">Overview</a>
+    <a href="#" data-nav="cases" class="dashboard-nav-item block px-3 py-2 rounded-sm text-slate hover:bg-paper">Cases</a>
+    <a href="#" data-nav="samples" class="dashboard-nav-item block px-3 py-2 rounded-sm text-slate hover:bg-paper">Samples</a>
+    <a href="#" data-nav="profiles" class="dashboard-nav-item block px-3 py-2 rounded-sm text-slate hover:bg-paper">Genetic profiles</a>
+    <a href="#" data-nav="comparisons" class="dashboard-nav-item block px-3 py-2 rounded-sm text-slate hover:bg-paper">Comparisons</a>
+    <a href="#" data-nav="reports" class="dashboard-nav-item block px-3 py-2 rounded-sm text-slate hover:bg-paper">Reports</a>
+    <a href="#" data-nav="audit" class="dashboard-nav-item block px-3 py-2 rounded-sm text-slate hover:bg-paper">Audit log</a>
+    <a href="#" data-nav="admin" class="dashboard-nav-item block px-3 py-2 rounded-sm text-slate hover:bg-paper">Administration</a>
+  </nav>
+
+  <div>
+    <p class="specimen-tag inline-block mb-4">OVERVIEW</p>
+    <h1 class="font-serif text-3xl mb-2">Welcome back<span id="welcome-name"></span></h1>
+    <p class="text-slate text-[15px] mb-10 max-w-lg">This is the Phase 2 dashboard scaffold: authentication, role detection, and navigation are live. Case management, sample tracking, profile ingestion, comparison, and reporting connect in the phases that follow.</p>
+
+    <div class="grid sm:grid-cols-3 gap-4 mb-12">
+      <div class="border border-line bg-white rounded-sm p-5">
+        <p class="text-xs text-slate mb-1">Your role</p>
+        <p id="overview-role" class="font-serif text-lg">—</p>
+      </div>
+      <div class="border border-line bg-white rounded-sm p-5">
+        <p class="text-xs text-slate mb-1">Account email</p>
+        <p id="overview-email" class="font-serif text-lg truncate">—</p>
+      </div>
+      <div class="border border-line bg-white rounded-sm p-5">
+        <p class="text-xs text-slate mb-1">Platform stage</p>
+        <p class="font-serif text-lg">Phase 2</p>
+      </div>
+    </div>
+
+    <div class="border-t border-line pt-8">
+      <p class="font-serif text-xl mb-4">Build roadmap</p>
+      <ul class="space-y-2.5 text-[15px]">
+        <li class="flex items-center gap-2"><span class="status-ok">&#10003;</span> Phase 1 — Public website</li>
+        <li class="flex items-center gap-2"><span class="status-ok">&#10003;</span> Phase 2 — Authentication &amp; dashboard scaffold</li>
+        <li class="flex items-center gap-2 text-slate"><span class="text-line">&#9675;</span> Phase 3 — Case &amp; sample management</li>
+        <li class="flex items-center gap-2 text-slate"><span class="text-line">&#9675;</span> Phase 4 — Laboratory data import</li>
+        <li class="flex items-center gap-2 text-slate"><span class="text-line">&#9675;</span> Phase 5 — Genetic profile normalization</li>
+        <li class="flex items-center gap-2 text-slate"><span class="text-line">&#9675;</span> Phase 6 — Quality control engine</li>
+        <li class="flex items-center gap-2 text-slate"><span class="text-line">&#9675;</span> Phase 7 — Comparison &amp; statistical engine</li>
+        <li class="flex items-center gap-2 text-slate"><span class="text-line">&#9675;</span> Phase 8 — Reporting</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="/assets/firebase-config.js"></script>
+<script src="/assets/auth.js"></script>
+<script>
+  // Which nav sections each role can see. Staff-only sections stay hidden
+  // for the customer role. This mirrors — and is backed up by — the
+  // Firestore security rules in /firestore.rules; hiding a nav item is a
+  // UX convenience, not the actual access control boundary.
+  const ROLE_NAV = {
+    super_admin: ['overview', 'cases', 'samples', 'profiles', 'comparisons', 'reports', 'audit', 'admin'],
+    laboratory_admin: ['overview', 'cases', 'samples', 'profiles', 'comparisons', 'reports', 'audit'],
+    laboratory_technician: ['overview', 'samples', 'profiles'],
+    case_manager: ['overview', 'cases', 'samples', 'reports'],
+    scientist_analyst: ['overview', 'cases', 'profiles', 'comparisons', 'reports'],
+    reviewer: ['overview', 'cases', 'comparisons', 'reports'],
+    customer: ['overview', 'cases', 'reports'],
+    auditor: ['overview', 'audit'],
+  };
+
+  requireAuth((user, profile) => {
+    document.getElementById('auth-loading').classList.add('hidden');
+    document.getElementById('dashboard-content').classList.remove('hidden');
+
+    const role = (profile && profile.role) || 'customer';
+    const displayName = user.displayName || (profile && profile.fullName) || user.email;
+
+    document.getElementById('user-chip').classList.remove('hidden');
+    document.getElementById('user-name').textContent = displayName;
+    document.getElementById('user-role').textContent = role.replace(/_/g, ' ');
+    document.getElementById('welcome-name').textContent = ', ' + displayName.split(' ')[0];
+    document.getElementById('overview-role').textContent = role.replace(/_/g, ' ');
+    document.getElementById('overview-email').textContent = user.email;
+
+    const allowed = ROLE_NAV[role] || ROLE_NAV.customer;
+    document.querySelectorAll('.dashboard-nav-item').forEach((el) => {
+      if (!allowed.includes(el.dataset.nav)) {
+        el.remove();
+      }
+    });
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', logoutUser);
+</script>
+</body>
+</html>
