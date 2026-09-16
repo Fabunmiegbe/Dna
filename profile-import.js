@@ -1,37 +1,45 @@
-// GeneMatch Phase 4 — laboratory data import.
+// GeneMatch Phase 4/5 — laboratory data import and profile normalization.
+//
 // Architecture (spec section 9):
 //   Laboratory instrument -> instrument adapter -> validation -> normalization
 //   -> internal genetic profile format (versioned)
 //
-// This file implements that pipeline client-side for the MVP: an adapter
-// turns a raw file into a common { markers, testingMethod, instrument,
-// referenceBuild } shape, validateProfile() checks it for the content
-// problems spec section 11 calls out, and importGeneticProfile() writes the
-// normalized, versioned result to genetic_profiles.
+// PHASE 5 CHANGE: the marker schema is no longer STR-specific. Spec section
+// 10 is explicit that the profile model must not be hard-coded to one
+// testing technology, so a marker now carries its own type:
 //
-// PROFILE_FORMAT_VERSION exists so a future schema change (new fields, a
-// different marker representation) doesn't silently reinterpret old
-// profiles — code reading a profile can check profileFormatVersion and
-// branch if it ever needs to.
+//   { markerId, markerType: 'STR' | 'SNP' | 'VARIANT', genotype: [a, b], raw }
+//
+// This is PROFILE_FORMAT_VERSION 2. Profiles imported under version 1 (the
+// original { locus, allele1, allele2 } shape from Phase 4) still exist and
+// are never rewritten in place — normalizeForDisplay() reads either version
+// into one common shape, so a v1 and a v2 profile can sit side by side in
+// the UI without the version difference leaking into every place that
+// reads a profile.
 //
 // Depends on auth.js (db) and case-data.js (nextSequence, logCustodyEvent,
 // logAuditEvent) being loaded first.
 
-const PROFILE_FORMAT_VERSION = 1;
+const PROFILE_FORMAT_VERSION = 2;
+
+function makeMarker(markerId, markerType, allele1, allele2, raw) {
+  return { markerId, markerType, genotype: [allele1, allele2], raw: raw || null };
+}
 
 // ---------------------------------------------------------------------------
 // INSTRUMENT ADAPTERS
-// Each adapter takes raw file text and returns the common intermediate
-// shape below. Add a new adapter here for a laboratory-specific format
-// rather than changing validation/normalization — that's the point of the
-// adapter layer per spec section 9.
+// Each adapter takes raw file text and returns:
+//   { markers: Marker[], testingMethod, instrument, referenceBuild }
+// Add a new adapter here for a laboratory-specific format rather than
+// changing validation/normalization — that's the point of the adapter layer.
 // ---------------------------------------------------------------------------
 
-// CSV adapter: expects an STR-style genotyping table with a header row
-// containing locus, allele1, allele2 (case-insensitive, any column order).
-// This is the common export shape for capillary-electrophoresis STR typing,
-// the standard method behind most parentage and relationship testing.
-function adaptCsv(text) {
+// STR genotyping CSV: header row with locus, allele1, allele2 (case
+// insensitive, any column order). The standard export shape for
+// capillary-electrophoresis STR typing — the method behind most parentage
+// and relationship testing. STR loci are defined by commercial kits, not
+// genome coordinates, so no reference build applies here.
+function adaptStrCsv(text) {
   const lines = text.trim().split(/\r?\n/).filter((l) => l.trim().length);
   if (!lines.length) throw new Error('The file is empty.');
   const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
@@ -43,16 +51,42 @@ function adaptCsv(text) {
   }
   const markers = lines.slice(1).map((line) => {
     const cols = line.split(',');
-    return {
-      locus: (cols[idxLocus] || '').trim(),
-      allele1: (cols[idxA1] || '').trim(),
-      allele2: (cols[idxA2] || '').trim(),
-    };
+    const locus = (cols[idxLocus] || '').trim();
+    const a1 = (cols[idxA1] || '').trim();
+    const a2 = (cols[idxA2] || '').trim();
+    return makeMarker(locus, 'STR', a1, a2, { locus, allele1: a1, allele2: a2 });
   });
   return { markers, testingMethod: 'STR_genotyping', instrument: null, referenceBuild: null };
 }
 
-// JSON adapter: expects { testingMethod, instrument, referenceBuild, markers: [{locus, allele1, allele2}] }
+// SNP array CSV: header row with rsid, allele1, allele2. SNP genotypes are
+// read against a specific reference genome build, so referenceBuild is
+// required for this adapter's output to mean anything downstream.
+function adaptSnpCsv(text) {
+  const lines = text.trim().split(/\r?\n/).filter((l) => l.trim().length);
+  if (!lines.length) throw new Error('The file is empty.');
+  const header = lines[0].split(',').map((h) => h.trim().toLowerCase());
+  const idxRsid = header.indexOf('rsid');
+  const idxA1 = header.indexOf('allele1');
+  const idxA2 = header.indexOf('allele2');
+  if (idxRsid === -1 || idxA1 === -1 || idxA2 === -1) {
+    throw new Error('CSV must have rsid, allele1, and allele2 columns.');
+  }
+  const markers = lines.slice(1).map((line) => {
+    const cols = line.split(',');
+    const rsid = (cols[idxRsid] || '').trim();
+    const a1 = (cols[idxA1] || '').trim();
+    const a2 = (cols[idxA2] || '').trim();
+    return makeMarker(rsid, 'SNP', a1, a2, { rsid, allele1: a1, allele2: a2 });
+  });
+  return { markers, testingMethod: 'SNP_array', instrument: null, referenceBuild: null };
+}
+
+// JSON adapter: accepts either the generalized shape
+//   { testingMethod, instrument, referenceBuild,
+//     markers: [{ markerId, markerType, genotype: [a, b] }] }
+// or the simpler locus/allele1/allele2 shape for convenience — both
+// normalize to the same internal marker format.
 function adaptJson(text) {
   let data;
   try {
@@ -61,29 +95,55 @@ function adaptJson(text) {
     throw new Error('File is not valid JSON.');
   }
   if (!Array.isArray(data.markers)) throw new Error('JSON must include a "markers" array.');
+
+  const markers = data.markers.map((m) => {
+    if (Array.isArray(m.genotype) && m.markerId) {
+      return makeMarker(
+        String(m.markerId).trim(),
+        m.markerType || 'UNSPECIFIED',
+        String(m.genotype[0] ?? '').trim(),
+        String(m.genotype[1] ?? '').trim(),
+        m
+      );
+    }
+    // Fall back to the simpler locus/allele1/allele2 shape.
+    const id = String(m.locus ?? m.markerId ?? '').trim();
+    return makeMarker(
+      id,
+      m.markerType || 'STR',
+      String(m.allele1 ?? '').trim(),
+      String(m.allele2 ?? '').trim(),
+      m
+    );
+  });
+
   return {
-    markers: data.markers.map((m) => ({
-      locus: String(m.locus ?? '').trim(),
-      allele1: String(m.allele1 ?? '').trim(),
-      allele2: String(m.allele2 ?? '').trim(),
-    })),
+    markers,
     testingMethod: data.testingMethod || 'unspecified',
     instrument: data.instrument || null,
     referenceBuild: data.referenceBuild || null,
   };
 }
 
-const IMPORT_ADAPTERS = { csv: adaptCsv, json: adaptJson };
+const IMPORT_ADAPTERS = {
+  str_csv: adaptStrCsv,
+  snp_csv: adaptSnpCsv,
+  json: adaptJson,
+};
 // TSV, XML, FASTA, and VCF adapters, plus laboratory-specific formats, slot
 // in here the same way once there's a real instrument output sample to
-// build them against — see LAB_INTEGRATION notes in the README.
+// build them against — see LAB_INTEGRATION notes in the README. A sequencing
+// adapter would tag markers 'VARIANT' and always require referenceBuild,
+// same as the SNP adapter does now.
+
+const REFERENCE_BUILD_REQUIRED_TYPES = ['SNP', 'VARIANT'];
 
 // ---------------------------------------------------------------------------
 // VALIDATION
-// Checks the content problems spec section 11 calls out. This intentionally
-// stays lighter than the full QC engine (Phase 6): it's enough to gate
-// whether a profile is usable at all, not the complete quality-metrics
-// system that will eventually live alongside it.
+// Checks the content problems spec section 11 calls out, generalized over
+// any marker type rather than assuming STR loci. This intentionally stays
+// lighter than the full QC engine (Phase 6): it gates whether a profile is
+// usable at all, not the complete quality-metrics system.
 // ---------------------------------------------------------------------------
 
 const ALLELE_FORMAT = /^[A-Za-z0-9]+(\.\d+)?$/; // e.g. "14", "16.2", "X", "OL"
@@ -91,34 +151,40 @@ const ALLELE_FORMAT = /^[A-Za-z0-9]+(\.\d+)?$/; // e.g. "14", "16.2", "X", "OL"
 function validateProfile(parsed) {
   const errors = [];
   const warnings = [];
-  const seenLoci = new Set();
+  const seenIds = new Set();
   let missing = 0;
   let duplicate = 0;
   let invalid = 0;
 
   parsed.markers.forEach((m) => {
-    if (!m.locus) {
-      errors.push('A marker row is missing a locus name.');
+    if (!m.markerId) {
+      errors.push('A marker row is missing an ID (locus or rsID).');
       return;
     }
-    const key = m.locus.toLowerCase();
-    if (seenLoci.has(key)) {
+    const key = m.markerId.toLowerCase();
+    if (seenIds.has(key)) {
       duplicate += 1;
-      warnings.push(`Duplicate marker: ${m.locus}`);
+      warnings.push(`Duplicate marker: ${m.markerId}`);
     }
-    seenLoci.add(key);
+    seenIds.add(key);
 
-    if (!m.allele1 || !m.allele2) {
+    const [a1, a2] = m.genotype;
+    if (!a1 || !a2) {
       missing += 1;
-      warnings.push(`Missing allele value at ${m.locus}`);
-    } else if (!ALLELE_FORMAT.test(m.allele1) || !ALLELE_FORMAT.test(m.allele2)) {
+      warnings.push(`Missing allele value at ${m.markerId}`);
+    } else if (!ALLELE_FORMAT.test(a1) || !ALLELE_FORMAT.test(a2)) {
       invalid += 1;
-      warnings.push(`Invalid allele format at ${m.locus}`);
+      warnings.push(`Invalid allele format at ${m.markerId}`);
     }
   });
 
   if (parsed.markers.length === 0) {
     errors.push('No markers were found in the imported file.');
+  }
+
+  const needsReferenceBuild = parsed.markers.some((m) => REFERENCE_BUILD_REQUIRED_TYPES.includes(m.markerType));
+  if (needsReferenceBuild && !parsed.referenceBuild) {
+    errors.push('This profile contains SNP or variant markers, which require a reference genome build (e.g. GRCh38) to be interpreted correctly.');
   }
 
   let status = 'PASS';
@@ -139,6 +205,38 @@ function validateProfile(parsed) {
 }
 
 // ---------------------------------------------------------------------------
+// NORMALIZATION FOR DISPLAY
+// Reads a profile of either format version into one common shape, so a
+// v1 (Phase 4) and v2 (Phase 5) profile render identically in the UI. This
+// is what makes side-by-side inspection of profiles imported at different
+// times possible without a data migration.
+// ---------------------------------------------------------------------------
+
+function normalizeForDisplay(profile) {
+  const version = profile.profileFormatVersion || 1;
+  let markers;
+  if (version >= 2) {
+    markers = profile.markers;
+  } else {
+    // v1 shape: { locus, allele1, allele2 }
+    markers = (profile.markers || []).map((m) =>
+      makeMarker(m.locus, 'STR', m.allele1, m.allele2, m)
+    );
+  }
+  return {
+    profileId: profile.profileId,
+    testingMethod: profile.testingMethod,
+    laboratory: profile.laboratory,
+    instrument: profile.instrument,
+    referenceBuild: profile.referenceBuild,
+    importStatus: profile.importStatus,
+    qualityMetrics: profile.qualityMetrics,
+    profileFormatVersion: version,
+    markers,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // IMPORT PIPELINE
 // ---------------------------------------------------------------------------
 
@@ -147,12 +245,13 @@ async function generateProfileId() {
   return `PRF-${seq}`;
 }
 
-async function importGeneticProfile({ file, format, caseId, sampleId, laboratory, actorUid }) {
+async function importGeneticProfile({ file, format, caseId, sampleId, laboratory, referenceBuild, actorUid }) {
   const adapter = IMPORT_ADAPTERS[format];
   if (!adapter) throw new Error('Unsupported import format: ' + format);
 
   const text = await file.text();
   const parsed = adapter(text); // adapter
+  if (referenceBuild) parsed.referenceBuild = referenceBuild;
   const validation = validateProfile(parsed); // validation
 
   const profileId = await generateProfileId();

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Genetic profile — GeneMatch</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body class="font-sans bg-paper text-ink antialiased">
+
+<header class="border-b border-line bg-white">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="/dashboard.html" class="flex items-center gap-2">
+      <svg width="24" height="24" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 2C6 7 20 7 20 13C20 19 6 19 6 24" stroke="#1F6F67" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M20 2C20 7 6 7 6 13C6 19 20 19 20 24" stroke="#10202E" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>
+      </svg>
+      <span class="font-serif text-lg text-ink">GeneMatch</span>
+    </a>
+    <a href="#" id="back-to-case" class="text-sm text-slate hover:text-teal">&larr; Back to case</a>
+  </div>
+</header>
+
+<div id="auth-loading" class="max-w-4xl mx-auto px-5 sm:px-8 py-16 text-slate text-sm">Checking your session…</div>
+<div id="not-found" class="hidden max-w-4xl mx-auto px-5 sm:px-8 py-16">
+  <p class="font-serif text-xl mb-2">Profile not found</p>
+  <p class="text-slate text-[15px]">Either this profile doesn't exist, or your role doesn't include access to genetic profiles.</p>
+</div>
+
+<main id="profile-content" class="hidden max-w-4xl mx-auto px-5 sm:px-8 py-10">
+  <div class="flex items-center justify-between flex-wrap gap-4 mb-2">
+    <p class="specimen-tag" id="profile-id-tag"></p>
+    <span id="profile-status-badge" class="text-sm font-medium"></span>
+  </div>
+  <h1 class="font-serif text-3xl mb-1" id="profile-method"></h1>
+  <p class="text-slate text-sm mb-10">Format version <span id="profile-version" class="font-mono"></span> &middot; imported for sample <span id="profile-sample" class="font-mono"></span></p>
+
+  <div class="grid sm:grid-cols-4 gap-4 mb-4 text-[13.5px]">
+    <div class="border border-line bg-white rounded-sm p-4">
+      <p class="text-xs text-slate mb-1">Laboratory</p>
+      <p id="meta-lab">—</p>
+    </div>
+    <div class="border border-line bg-white rounded-sm p-4">
+      <p class="text-xs text-slate mb-1">Instrument</p>
+      <p id="meta-instrument">—</p>
+    </div>
+    <div class="border border-line bg-white rounded-sm p-4">
+      <p class="text-xs text-slate mb-1">Reference build</p>
+      <p id="meta-reference">—</p>
+    </div>
+    <div class="border border-line bg-white rounded-sm p-4">
+      <p class="text-xs text-slate mb-1">Markers</p>
+      <p id="meta-markers">—</p>
+    </div>
+  </div>
+
+  <div id="import-notes" class="hidden border border-line bg-white rounded-sm p-4 mb-10 text-[13.5px] space-y-1"></div>
+
+  <p class="font-serif text-xl mb-4">Markers</p>
+  <div class="border border-line bg-white rounded-sm overflow-x-auto">
+    <table class="w-full text-[14px]">
+      <thead>
+        <tr class="border-b border-line text-left text-slate">
+          <th class="px-4 py-3 font-normal">Marker</th>
+          <th class="px-4 py-3 font-normal">Type</th>
+          <th class="px-4 py-3 font-normal">Genotype</th>
+        </tr>
+      </thead>
+      <tbody id="markers-body"></tbody>
+    </table>
+  </div>
+  <p class="text-xs text-slate mt-8 max-w-lg">This view shows what was imported, normalized to one display format regardless of testing method or the format version it was imported under. It is not a comparison or a relationship result — that's the comparison engine, coming in a later phase.</p>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="/assets/firebase-config.js"></script>
+<script src="/assets/auth.js"></script>
+<script src="/assets/case-data.js"></script>
+<script src="/assets/profile-import.js"></script>
+<script>
+  const STATUS_CLASS = { PASS: 'status-ok', WARNING: 'status-warn', FAIL: 'status-fail' };
+  const params = new URLSearchParams(window.location.search);
+  const profileId = params.get('id');
+
+  requireAuth(async (user, profile) => {
+    const role = (profile && profile.role) || 'customer';
+    document.getElementById('auth-loading').classList.add('hidden');
+
+    if (role === 'customer' || !profileId) {
+      document.getElementById('not-found').classList.remove('hidden');
+      return;
+    }
+
+    let raw;
+    try {
+      raw = await getProfile(profileId);
+    } catch (e) {
+      raw = null;
+    }
+    if (!raw) {
+      document.getElementById('not-found').classList.remove('hidden');
+      return;
+    }
+
+    document.getElementById('back-to-case').href = '/case.html?id=' + encodeURIComponent(raw.caseId);
+
+    const normalized = normalizeForDisplay(raw);
+    document.getElementById('profile-content').classList.remove('hidden');
+    document.getElementById('profile-id-tag').textContent = 'PROFILE ' + normalized.profileId;
+    document.getElementById('profile-method').textContent = (normalized.testingMethod || '').replace(/_/g, ' ');
+    document.getElementById('profile-version').textContent = normalized.profileFormatVersion;
+    document.getElementById('profile-sample').textContent = raw.sampleId;
+
+    const statusEl = document.getElementById('profile-status-badge');
+    statusEl.textContent = normalized.importStatus;
+    statusEl.className = 'text-sm font-medium ' + (STATUS_CLASS[normalized.importStatus] || '');
+
+    document.getElementById('meta-lab').textContent = normalized.laboratory || '—';
+    document.getElementById('meta-instrument').textContent = normalized.instrument || '—';
+    document.getElementById('meta-reference').textContent = normalized.referenceBuild || 'Not applicable';
+    document.getElementById('meta-markers').textContent = normalized.qualityMetrics ? normalized.qualityMetrics.totalMarkers : normalized.markers.length;
+
+    const notes = [...(raw.importErrors || []), ...(raw.importWarnings || [])];
+    if (notes.length) {
+      const notesEl = document.getElementById('import-notes');
+      notesEl.classList.remove('hidden');
+      notesEl.innerHTML = [
+        ...(raw.importErrors || []).map((m) => `<p class="status-fail">${m}</p>`),
+        ...(raw.importWarnings || []).map((m) => `<p class="status-warn">${m}</p>`),
+      ].join('');
+    }
+
+    document.getElementById('markers-body').innerHTML = normalized.markers.map((m) => `
+      <tr class="border-b border-line last:border-0">
+        <td class="px-4 py-2.5 font-mono">${m.markerId}</td>
+        <td class="px-4 py-2.5 text-slate">${m.markerType}</td>
+        <td class="px-4 py-2.5 font-mono">${m.genotype[0] || '—'} / ${m.genotype[1] || '—'}</td>
+      </tr>
+    `).join('');
+  });
+</script>
+</body>
+</html>
