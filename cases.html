@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cases — GeneMatch</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body class="font-sans bg-paper text-ink antialiased">
+
+<header class="border-b border-line bg-white">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="/dashboard.html" class="flex items-center gap-2">
+      <svg width="24" height="24" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 2C6 7 20 7 20 13C20 19 6 19 6 24" stroke="#1F6F67" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M20 2C20 7 6 7 6 13C6 19 20 19 20 24" stroke="#10202E" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>
+      </svg>
+      <span class="font-serif text-lg text-ink">GeneMatch</span>
+    </a>
+    <a href="/dashboard.html" class="text-sm text-slate hover:text-teal">&larr; Dashboard</a>
+  </div>
+</header>
+
+<div id="auth-loading" class="max-w-6xl mx-auto px-5 sm:px-8 py-16 text-slate text-sm">Checking your session…</div>
+
+<main id="cases-content" class="hidden max-w-6xl mx-auto px-5 sm:px-8 py-10">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <p class="specimen-tag inline-block mb-3">CASES</p>
+      <h1 class="font-serif text-3xl">Cases</h1>
+    </div>
+    <a href="/request-test.html" class="bg-ink text-paper px-5 py-2.5 rounded-sm text-[14.5px] hover:bg-teal-dark transition-colors">New request</a>
+  </div>
+
+  <div id="empty-state" class="hidden border border-line bg-white rounded-sm p-10 text-center">
+    <p class="font-serif text-lg mb-2">No cases yet</p>
+    <p class="text-slate text-[15px] mb-5">Cases you request or are assigned to will show up here.</p>
+    <a href="/request-test.html" class="text-teal hover:text-teal-dark text-[15px]">Request a test &rarr;</a>
+  </div>
+
+  <div id="cases-table-wrap" class="hidden border border-line bg-white rounded-sm overflow-x-auto">
+    <table class="w-full text-[14.5px]">
+      <thead>
+        <tr class="border-b border-line text-left text-slate">
+          <th class="px-4 py-3 font-normal">Case ID</th>
+          <th class="px-4 py-3 font-normal">Type</th>
+          <th class="px-4 py-3 font-normal">Status</th>
+          <th class="px-4 py-3 font-normal">Samples</th>
+          <th class="px-4 py-3 font-normal">Created</th>
+        </tr>
+      </thead>
+      <tbody id="cases-table-body"></tbody>
+    </table>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="/assets/firebase-config.js"></script>
+<script src="/assets/auth.js"></script>
+<script src="/assets/case-data.js"></script>
+<script>
+  const STATUS_LABEL = {
+    submitted: 'Submitted', consent_pending: 'Consent pending',
+    sample_collection: 'Sample collection', laboratory_processing: 'Laboratory processing',
+    quality_control: 'Quality control', analysis: 'Analysis',
+    scientific_review: 'Scientific review', report_ready: 'Report ready', closed: 'Closed',
+  };
+
+  function fmtDate(ts) {
+    if (!ts || !ts.toDate) return '—';
+    return ts.toDate().toLocaleDateString();
+  }
+
+  function renderCases(cases) {
+    document.getElementById('auth-loading').classList.add('hidden');
+    document.getElementById('cases-content').classList.remove('hidden');
+    if (!cases.length) {
+      document.getElementById('empty-state').classList.remove('hidden');
+      return;
+    }
+    document.getElementById('cases-table-wrap').classList.remove('hidden');
+    const body = document.getElementById('cases-table-body');
+    body.innerHTML = cases.map((c) => `
+      <tr class="border-b border-line last:border-0 hover:bg-paper">
+        <td class="px-4 py-3"><a href="/case.html?id=${c.caseId}" class="font-mono text-teal hover:text-teal-dark">${c.caseId}</a></td>
+        <td class="px-4 py-3 capitalize">${(c.caseType || '').replace(/_/g, ' ')}</td>
+        <td class="px-4 py-3">${STATUS_LABEL[c.status] || c.status}</td>
+        <td class="px-4 py-3">${c.numSamples || 0}</td>
+        <td class="px-4 py-3 text-slate">${fmtDate(c.createdAt)}</td>
+      </tr>
+    `).join('');
+  }
+
+  requireAuth(async (user, profile) => {
+    const role = (profile && profile.role) || 'customer';
+    const isStaffRole = role !== 'customer';
+    try {
+      const cases = isStaffRole ? await listAllCases() : await listCasesForCustomer(user.uid);
+      renderCases(cases);
+    } catch (err) {
+      console.error(err);
+      document.getElementById('auth-loading').textContent = 'Could not load cases. Please try again.';
+    }
+  });
+</script>
+</body>
+</html>

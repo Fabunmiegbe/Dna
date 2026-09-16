@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Case — GeneMatch</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body class="font-sans bg-paper text-ink antialiased">
+
+<header class="border-b border-line bg-white">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="/dashboard.html" class="flex items-center gap-2">
+      <svg width="24" height="24" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 2C6 7 20 7 20 13C20 19 6 19 6 24" stroke="#1F6F67" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M20 2C20 7 6 7 6 13C6 19 20 19 20 24" stroke="#10202E" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>
+      </svg>
+      <span class="font-serif text-lg text-ink">GeneMatch</span>
+    </a>
+    <a href="/cases.html" class="text-sm text-slate hover:text-teal">&larr; All cases</a>
+  </div>
+</header>
+
+<div id="auth-loading" class="max-w-4xl mx-auto px-5 sm:px-8 py-16 text-slate text-sm">Checking your session…</div>
+<div id="not-found" class="hidden max-w-4xl mx-auto px-5 sm:px-8 py-16">
+  <p class="font-serif text-xl mb-2">Case not found</p>
+  <p class="text-slate text-[15px]">Either this case doesn't exist, or you don't have access to it.</p>
+</div>
+
+<main id="case-content" class="hidden max-w-4xl mx-auto px-5 sm:px-8 py-10">
+  <p class="specimen-tag inline-block mb-3" id="case-id-tag"></p>
+  <div class="flex items-center justify-between flex-wrap gap-4 mb-10">
+    <h1 class="font-serif text-3xl capitalize" id="case-title"></h1>
+    <span id="case-status-badge" class="text-sm border border-line rounded-sm px-3 py-1.5"></span>
+  </div>
+
+  <!-- CUSTOMER VIEW: simplified status stepper -->
+  <section id="customer-status" class="hidden mb-14">
+    <p class="font-serif text-xl mb-5">Status</p>
+    <ol id="status-stepper" class="space-y-3 text-[15px]"></ol>
+  </section>
+
+  <!-- STAFF VIEW: status control -->
+  <section id="staff-status-control" class="hidden mb-10 border border-line bg-white rounded-sm p-5 flex items-center gap-4 flex-wrap">
+    <label for="status-select" class="text-sm text-slate">Update status</label>
+    <select id="status-select" class="border border-line rounded-sm px-3 py-2 text-[14.5px] bg-white"></select>
+    <button id="status-save" class="bg-ink text-paper px-4 py-2 rounded-sm text-[14.5px] hover:bg-teal-dark transition-colors">Save</button>
+    <span id="status-saved" class="hidden text-sm status-ok">Saved</span>
+  </section>
+
+  <!-- STAFF VIEW: samples -->
+  <section id="staff-samples" class="hidden mb-14">
+    <div class="flex items-center justify-between mb-5">
+      <p class="font-serif text-xl">Samples</p>
+      <button id="register-sample-toggle" class="text-sm text-teal hover:text-teal-dark">+ Register sample</button>
+    </div>
+
+    <form id="register-sample-form" class="hidden border border-line bg-white rounded-sm p-5 mb-6 grid sm:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm text-slate mb-1.5">Sample type</label>
+        <select id="sample-type" class="w-full border border-line rounded-sm px-3 py-2 text-[14.5px] bg-white">
+          <option value="buccal_swab">Buccal / cheek swab</option>
+          <option value="blood">Blood</option>
+          <option value="other">Other validated sample type</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm text-slate mb-1.5">Donor / participant ID</label>
+        <input id="sample-donor" type="text" class="w-full border border-line rounded-sm px-3 py-2 text-[14.5px]" />
+      </div>
+      <div>
+        <label class="block text-sm text-slate mb-1.5">Collection location</label>
+        <input id="sample-location" type="text" class="w-full border border-line rounded-sm px-3 py-2 text-[14.5px]" />
+      </div>
+      <div>
+        <label class="block text-sm text-slate mb-1.5">Storage location</label>
+        <input id="sample-storage" type="text" class="w-full border border-line rounded-sm px-3 py-2 text-[14.5px]" />
+      </div>
+      <div class="sm:col-span-2">
+        <button type="submit" class="bg-ink text-paper px-5 py-2.5 rounded-sm text-[14.5px] hover:bg-teal-dark transition-colors">Register sample</button>
+      </div>
+    </form>
+
+    <div id="samples-list" class="space-y-4"></div>
+  </section>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="/assets/firebase-config.js"></script>
+<script src="/assets/auth.js"></script>
+<script src="/assets/case-data.js"></script>
+<script>
+  const STATUS_STEPS = [
+    { key: 'submitted', label: 'Request submitted' },
+    { key: 'consent_pending', label: 'Consent' },
+    { key: 'sample_collection', label: 'Sample collection' },
+    { key: 'laboratory_processing', label: 'Laboratory processing' },
+    { key: 'quality_control', label: 'Quality control' },
+    { key: 'analysis', label: 'Analysis' },
+    { key: 'scientific_review', label: 'Scientific review' },
+    { key: 'report_ready', label: 'Report' },
+  ];
+  const CUSTODY_LABEL = {
+    COLLECTED: 'Collected', RECEIVED: 'Received by laboratory', TRANSFERRED: 'Transferred',
+    STORED: 'Stored', LABORATORY_PROCESSING: 'Laboratory processing', TESTING: 'Testing',
+    DATA_UPLOADED: 'Data uploaded', ANALYSIS: 'Analysis', REVIEW: 'Review', REPORT_GENERATED: 'Report generated',
+  };
+
+  const params = new URLSearchParams(window.location.search);
+  const caseId = params.get('id');
+
+  function fmtDateTime(ts) {
+    if (!ts || !ts.toDate) return 'just now';
+    return ts.toDate().toLocaleString();
+  }
+
+  function renderStepper(status) {
+    const idx = STATUS_STEPS.findIndex((s) => s.key === status);
+    const el = document.getElementById('status-stepper');
+    el.innerHTML = STATUS_STEPS.map((s, i) => {
+      const done = idx === -1 ? false : i <= idx;
+      return `<li class="flex items-center gap-3">
+        <span class="${done ? 'status-ok' : 'text-line'}">${done ? '&#10003;' : '&#9675;'}</span>
+        <span class="${done ? 'text-ink' : 'text-slate'}">${s.label}</span>
+      </li>`;
+    }).join('');
+  }
+
+  async function renderSamples() {
+    const samples = await listSamplesForCase(caseId);
+    const listEl = document.getElementById('samples-list');
+    if (!samples.length) {
+      listEl.innerHTML = '<p class="text-slate text-[14.5px]">No samples registered yet.</p>';
+      return;
+    }
+    listEl.innerHTML = '';
+    for (const s of samples) {
+      const events = await listCustodyEvents(s.sampleId);
+      const card = document.createElement('div');
+      card.className = 'border border-line bg-white rounded-sm p-5';
+      card.innerHTML = `
+        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <p class="specimen-tag">${s.sampleId}</p>
+          <span class="text-xs text-slate capitalize">${(s.sampleType || '').replace(/_/g, ' ')} · ${(s.storageStatus || '').replace(/_/g, ' ')}</span>
+        </div>
+        <p class="text-sm text-slate mb-4">Donor ID: ${s.donorParticipantId || '—'} &middot; Location: ${s.storageLocation || '—'}</p>
+        <p class="text-xs text-slate mb-2">Chain of custody</p>
+        <ol class="space-y-1.5 text-[13.5px] border-l border-line pl-4">
+          ${events.map((ev) => `<li><span class="font-mono text-slate">${fmtDateTime(ev.timestamp)}</span> — ${CUSTODY_LABEL[ev.eventType] || ev.eventType}${ev.notes ? ' — ' + ev.notes : ''}</li>`).join('')}
+        </ol>
+      `;
+      listEl.appendChild(card);
+    }
+  }
+
+  requireAuth(async (user, profile) => {
+    const role = (profile && profile.role) || 'customer';
+    const isStaffRole = role !== 'customer';
+
+    if (!caseId) {
+      document.getElementById('auth-loading').classList.add('hidden');
+      document.getElementById('not-found').classList.remove('hidden');
+      return;
+    }
+
+    let caseData;
+    try {
+      caseData = await getCase(caseId);
+    } catch (err) {
+      caseData = null;
+    }
+
+    document.getElementById('auth-loading').classList.add('hidden');
+    if (!caseData) {
+      document.getElementById('not-found').classList.remove('hidden');
+      return;
+    }
+
+    document.getElementById('case-content').classList.remove('hidden');
+    document.getElementById('case-id-tag').textContent = 'CASE ' + caseData.caseId;
+    document.getElementById('case-title').textContent = (caseData.caseType || '').replace(/_/g, ' ');
+    document.getElementById('case-status-badge').textContent = (caseData.status || '').replace(/_/g, ' ');
+
+    if (isStaffRole) {
+      document.getElementById('staff-status-control').classList.remove('hidden');
+      document.getElementById('staff-samples').classList.remove('hidden');
+
+      const select = document.getElementById('status-select');
+      select.innerHTML = STATUS_STEPS.concat([{ key: 'closed', label: 'Closed' }])
+        .map((s) => `<option value="${s.key}" ${s.key === caseData.status ? 'selected' : ''}>${s.label}</option>`).join('');
+      document.getElementById('status-save').addEventListener('click', async () => {
+        await updateCaseStatus(caseId, select.value, user.uid);
+        document.getElementById('case-status-badge').textContent = select.value.replace(/_/g, ' ');
+        const saved = document.getElementById('status-saved');
+        saved.classList.remove('hidden');
+        setTimeout(() => saved.classList.add('hidden'), 2000);
+      });
+
+      document.getElementById('register-sample-toggle').addEventListener('click', () => {
+        document.getElementById('register-sample-form').classList.toggle('hidden');
+      });
+      document.getElementById('register-sample-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await registerSample({
+          caseId,
+          sampleType: document.getElementById('sample-type').value,
+          collectionLocation: document.getElementById('sample-location').value.trim(),
+          collectorUid: user.uid,
+          storageLocation: document.getElementById('sample-storage').value.trim(),
+          donorParticipantId: document.getElementById('sample-donor').value.trim(),
+        });
+        document.getElementById('register-sample-form').reset();
+        document.getElementById('register-sample-form').classList.add('hidden');
+        await renderSamples();
+      });
+
+      await renderSamples();
+    } else {
+      document.getElementById('customer-status').classList.remove('hidden');
+      renderStepper(caseData.status);
+    }
+  });
+</script>
+</body>
+</html>
