@@ -65,6 +65,8 @@
       <button id="register-sample-toggle" class="text-sm text-teal hover:text-teal-dark">+ Register sample</button>
     </div>
 
+    <div id="qc-summary" class="hidden border border-line bg-white rounded-sm p-4 mb-6 flex gap-6 text-[13.5px]"></div>
+
     <form id="register-sample-form" class="hidden border border-line bg-white rounded-sm p-5 mb-6 grid sm:grid-cols-2 gap-4">
       <div>
         <label class="block text-sm text-slate mb-1.5">Sample type</label>
@@ -140,6 +142,12 @@
   }
 
   const STATUS_CLASS = { PASS: 'status-ok', WARNING: 'status-warn', FAIL: 'status-fail' };
+  const ANALYSIS_LABEL = {
+    ready_for_analysis: { label: 'ready', cls: 'status-ok' },
+    blocked: { label: 'blocked — needs review', cls: 'status-fail' },
+    cleared_by_review: { label: 'cleared by review', cls: 'status-ok' },
+    rejected: { label: 'rejected', cls: 'status-fail' },
+  };
 
   async function renderSamples() {
     const samples = await listSamplesForCase(caseId);
@@ -149,9 +157,17 @@
       return;
     }
     listEl.innerHTML = '';
+    const qcCounts = { total: 0, blocked: 0, cleared: 0, ready: 0, rejected: 0 };
     for (const s of samples) {
       const events = await listCustodyEvents(s.sampleId);
       const profiles = await listProfilesForSample(s.sampleId);
+      profiles.forEach((p) => {
+        qcCounts.total += 1;
+        if (p.analysisStatus === 'blocked') qcCounts.blocked += 1;
+        else if (p.analysisStatus === 'cleared_by_review') qcCounts.cleared += 1;
+        else if (p.analysisStatus === 'rejected') qcCounts.rejected += 1;
+        else qcCounts.ready += 1;
+      });
       const card = document.createElement('div');
       card.className = 'border border-line bg-white rounded-sm p-5';
       card.innerHTML = `
@@ -166,7 +182,10 @@
           <a href="/import.html?caseId=${caseId}&sampleId=${s.sampleId}" class="text-xs text-teal hover:text-teal-dark">+ Import profile</a>
         </div>
         ${profiles.length
-          ? `<ul class="space-y-1 text-[13.5px] mb-4">${profiles.map((p) => `<li class="flex items-center gap-2"><a href="/profile.html?id=${p.profileId}" class="font-mono text-teal hover:text-teal-dark">${p.profileId}</a><span class="${STATUS_CLASS[p.importStatus] || ''}">${p.importStatus}</span><span class="text-slate">· ${p.qualityMetrics ? p.qualityMetrics.totalMarkers : 0} markers</span></li>`).join('')}</ul>`
+          ? `<ul class="space-y-1 text-[13.5px] mb-4">${profiles.map((p) => {
+              const a = ANALYSIS_LABEL[p.analysisStatus] || { label: p.analysisStatus, cls: '' };
+              return `<li class="flex items-center gap-2 flex-wrap"><a href="/profile.html?id=${p.profileId}" class="font-mono text-teal hover:text-teal-dark">${p.profileId}</a><span class="${STATUS_CLASS[p.importStatus] || ''}">${p.importStatus}</span><span class="text-slate">· ${p.qualityMetrics ? p.qualityMetrics.totalMarkers : 0} markers</span><span class="${a.cls}">· ${a.label}</span></li>`;
+            }).join('')}</ul>`
           : `<p class="text-[13.5px] text-slate mb-4">No profile imported yet.</p>`}
 
         <p class="text-xs text-slate mb-2">Chain of custody</p>
@@ -175,6 +194,17 @@
         </ol>
       `;
       listEl.appendChild(card);
+    }
+
+    if (qcCounts.total > 0) {
+      const summary = document.getElementById('qc-summary');
+      summary.classList.remove('hidden');
+      summary.innerHTML = `
+        <span><span class="font-serif text-lg">${qcCounts.total}</span> <span class="text-slate">profiles</span></span>
+        <span><span class="font-serif text-lg status-ok">${qcCounts.ready + qcCounts.cleared}</span> <span class="text-slate">ready</span></span>
+        <span><span class="font-serif text-lg status-fail">${qcCounts.blocked}</span> <span class="text-slate">blocked</span></span>
+        <span><span class="font-serif text-lg status-fail">${qcCounts.rejected}</span> <span class="text-slate">rejected</span></span>
+      `;
     }
   }
 

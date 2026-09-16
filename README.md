@@ -1,8 +1,9 @@
-# GeneMatch — Phase 1–5 build
+# GeneMatch — Phase 1–6 build
 
 Public website, authentication, case/sample management, laboratory data
-import, and genetic profile normalization for GeneMatch. This build covers
-Phases 1–5 of the full 13-phase roadmap in the original spec:
+import, profile normalization, and quality-control review for GeneMatch.
+This build covers Phases 1–6 of the full 13-phase roadmap in the original
+spec:
 
 - **Phase 1 — Public website:** done, all 15 pages.
 - **Phase 2 — Authentication & dashboard scaffold:** done (Firebase Auth,
@@ -17,12 +18,16 @@ Phases 1–5 of the full 13-phase roadmap in the original spec:
   `genetic_profiles`.
 - **Phase 5 — Genetic profile normalization:** done. The marker schema is
   generalized beyond STR loci (STR/SNP/variant-aware, reference-build
-  handling), a viewer page reads either format version into one common
-  shape, and profiles now carry `profileFormatVersion: 2`. See "Phase 5
-  details" below.
-- **Phase 6 onward** (the full quality-control engine, comparison/
-  statistical engine, reporting, hardening, integration, validation,
-  regulatory review, pilot) are **not built yet**.
+  handling), and a viewer page reads either format version into one common
+  shape.
+- **Phase 6 — Quality control engine:** done. Sample/profile mismatch
+  detection runs at import time, a case-level QC summary aggregates status
+  across all of a case's profiles, and a FAIL no longer blocks a profile
+  forever — a qualified reviewer can clear or reject it, with every
+  decision recorded permanently. See "Phase 6 details" below.
+- **Phase 7 onward** (the comparison/statistical engine, reporting,
+  hardening, integration, validation, regulatory review, pilot) are **not
+  built yet**.
 
 ## Stack
 
@@ -65,9 +70,50 @@ genematch/
     firebase-config.js       PLACEHOLDER — fill in real project config
     auth.js                  Firebase auth helpers (login, register, role fetch)
     case-data.js             Phase 3: case/sample CRUD, chain of custody, ID generation
-    profile-import.js         Phase 4/5: adapters, validation, generalized marker model
-  firestore.rules            Security rules backing the RBAC (Phases 2–5)
+    profile-import.js         Phase 4/5/6: adapters, validation, marker model, QC review
+  firestore.rules            Security rules backing the RBAC (Phases 2–6)
 ```
+
+## Phase 6 details
+
+**Sample/profile mismatch detection:** `checkSampleProfileConsistency()`
+runs at import time, before a profile is written. It confirms the sample
+record actually exists, confirms it belongs to the case the import claims
+(a genuine integrity check, not just trusting the URL), and warns — without
+blocking — if the sample already has a profile using a different testing
+method, since that's sometimes an intentional re-test and sometimes a sign
+something's wrong. Its findings are merged into the same PASS/WARNING/FAIL
+decision as the marker-level checks from Phase 4/5, not tracked separately.
+
+**Review, not permanent blocking:** spec section 11 says a failed check
+should block analysis "until reviewed" — not forever. A `FAIL` profile
+stores `analysisStatus: 'blocked'`. On `profile.html`, a reviewer-capable
+role (`reviewer`, `scientist_analyst`, `laboratory_admin`, `super_admin`)
+sees a form to **clear for analysis** or **reject**, with a required note.
+Whoever imported the profile can't review their own FAIL — that's enforced
+in `firestore.rules` (`isReviewerRole()`), not just hidden in the UI.
+
+**Decision trail:** every review writes to `qc_reviews` (append-only, like
+`custody_events`), logs a `REVIEW` chain-of-custody event on the sample, and
+logs a `QC_COMPLETED` audit event. `profile.html` shows the full review
+history — decision, reviewer note, timestamp — for any profile that's been
+reviewed.
+
+**Surfaced consistently, not just at import:** `case.html` now shows a
+case-level QC summary (profiles / ready / blocked / rejected, aggregated
+across every sample in the case) above the sample list, and each profile's
+row shows both its original import status and its current, possibly
+reviewed, analysis status — so "blocked" doesn't silently disappear once
+you're looking at anything other than the import result itself.
+
+**What's still simplified:** this is the QC engine, not the comparison
+engine. There's still no cross-case quality dashboard (each case shows its
+own summary; nothing rolls up across the whole platform), and "unexpected
+values" / "low-quality data" from spec section 11 are covered by the
+existing allele-format and metrics checks rather than anything
+method-specific (e.g. no per-locus expected-range checking for STR kits).
+Both are reasonable next steps once there's real lab data to calibrate
+against, rather than something worth guessing at now.
 
 ## Phase 5 details
 
@@ -249,12 +295,17 @@ hiding is a UX convenience only; `firestore.rules` is the actual boundary.
   anywhere yet. Wire `request-test.html` to `POST /api/cases` once Phase 3's
   case-management API exists.
 
-## What's next (Phase 6)
+## What's next (Phase 7)
 
-The full quality-control engine: PASS/WARNING/FAIL surfaced consistently
-across the platform (not just at import time), sample/profile mismatch
-detection, a quality-metrics view aggregated across a case's samples rather
-than inspected one profile at a time, and gating that actually blocks
-downstream comparison — not just an `analysisStatus` field sitting unused.
-This is what Phase 7 (the comparison engine) will check before it lets two
-profiles be compared at all.
+The comparison engine: taking two or more `ready_for_analysis` /
+`cleared_by_review` profiles and actually comparing them marker by marker —
+matching/non-matching markers, missing data, quality warnings surfaced
+per-comparison rather than per-profile. Spec section 12 is explicit that
+this should not collapse into a single "DNA Match: 98%" style number unless
+that has a real statistical meaning for the specific test; the output is
+concordant/discordant markers and informative-marker counts, with the actual
+likelihood-ratio statistics landing in Phase 8's dedicated statistical
+engine right after. Comparison should also be the first place that actually
+*enforces* `analysisStatus` — refusing to compare a `blocked` or `rejected`
+profile — rather than just displaying it, which is the natural next tightening
+after this phase's QC work.
