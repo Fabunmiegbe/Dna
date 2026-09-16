@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Import genetic profile — GeneMatch</title>
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body class="font-sans bg-paper text-ink antialiased">
+
+<header class="border-b border-line bg-white">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="/dashboard.html" class="flex items-center gap-2">
+      <svg width="24" height="24" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M6 2C6 7 20 7 20 13C20 19 6 19 6 24" stroke="#1F6F67" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M20 2C20 7 6 7 6 13C6 19 20 19 20 24" stroke="#10202E" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>
+      </svg>
+      <span class="font-serif text-lg text-ink">GeneMatch</span>
+    </a>
+    <a href="#" id="back-to-case" class="text-sm text-slate hover:text-teal">&larr; Back to case</a>
+  </div>
+</header>
+
+<div id="auth-loading" class="max-w-2xl mx-auto px-5 sm:px-8 py-16 text-slate text-sm">Checking your session…</div>
+<div id="not-authorized" class="hidden max-w-2xl mx-auto px-5 sm:px-8 py-16">
+  <p class="font-serif text-xl mb-2">Not available</p>
+  <p class="text-slate text-[15px]">Genetic profile import is limited to laboratory staff. Missing case or sample reference, or your role doesn't include this action.</p>
+</div>
+
+<main id="import-content" class="hidden max-w-2xl mx-auto px-5 sm:px-8 py-16">
+  <p class="specimen-tag inline-block mb-3" id="sample-tag"></p>
+  <h1 class="font-serif text-3xl leading-tight mb-3">Import genetic profile</h1>
+  <p class="text-slate text-[15px] mb-10 max-w-lg">Upload the instrument output for this sample. It's checked against the expected format and content before anything is stored — a failed check blocks the profile from analysis until reviewed.</p>
+
+  <form id="import-form" class="border border-line bg-white rounded-sm p-6 sm:p-8 space-y-6">
+    <div>
+      <label class="block text-sm text-slate mb-1.5">File format</label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="flex items-center gap-2.5 border border-line rounded-sm px-4 py-3 text-[15px] cursor-pointer has-[:checked]:border-teal">
+          <input type="radio" name="format" value="csv" checked />
+          CSV (locus, allele1, allele2)
+        </label>
+        <label class="flex items-center gap-2.5 border border-line rounded-sm px-4 py-3 text-[15px] cursor-pointer has-[:checked]:border-teal">
+          <input type="radio" name="format" value="json" />
+          JSON
+        </label>
+      </div>
+      <p class="text-xs text-slate mt-2">TSV, XML, FASTA, VCF, and laboratory-specific adapters can be added to <span class="font-mono">assets/profile-import.js</span> as they're needed — see the adapter architecture note in the README.</p>
+    </div>
+
+    <div>
+      <label for="lab-name" class="block text-sm text-slate mb-1.5">Laboratory</label>
+      <input id="lab-name" type="text" required placeholder="e.g. Lagos Reference Laboratory" class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+    </div>
+
+    <div>
+      <label for="profile-file" class="block text-sm text-slate mb-1.5">File</label>
+      <input id="profile-file" type="file" accept=".csv,.json,.txt" required class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] bg-white" />
+    </div>
+
+    <p id="import-error" class="text-sm text-fail hidden"></p>
+    <button type="submit" id="import-submit" class="bg-ink text-paper px-6 py-3 rounded-sm text-[15px] hover:bg-teal-dark transition-colors">Import &amp; validate</button>
+  </form>
+
+  <div id="import-result" class="hidden mt-8 border border-line bg-white rounded-sm p-6 sm:p-8">
+    <div class="flex items-center justify-between mb-4">
+      <p class="specimen-tag" id="result-profile-id"></p>
+      <span id="result-status" class="text-sm font-medium"></span>
+    </div>
+    <div class="grid grid-cols-4 gap-4 text-center mb-6 text-[13.5px]">
+      <div><p class="font-serif text-xl" id="metric-total">—</p><p class="text-slate">Markers</p></div>
+      <div><p class="font-serif text-xl" id="metric-missing">—</p><p class="text-slate">Missing</p></div>
+      <div><p class="font-serif text-xl" id="metric-duplicate">—</p><p class="text-slate">Duplicate</p></div>
+      <div><p class="font-serif text-xl" id="metric-invalid">—</p><p class="text-slate">Invalid</p></div>
+    </div>
+    <div id="result-messages" class="space-y-1.5 text-[13.5px]"></div>
+    <a href="#" id="result-back" class="inline-block mt-6 text-teal hover:text-teal-dark text-[15px]">Back to case &rarr;</a>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="/assets/firebase-config.js"></script>
+<script src="/assets/auth.js"></script>
+<script src="/assets/case-data.js"></script>
+<script src="/assets/profile-import.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const caseId = params.get('caseId');
+  const sampleId = params.get('sampleId');
+
+  const backLink = '/case.html?id=' + encodeURIComponent(caseId || '');
+  document.getElementById('back-to-case').href = backLink;
+  document.getElementById('result-back').href = backLink;
+
+  requireAuth((user, profile) => {
+    const role = (profile && profile.role) || 'customer';
+    document.getElementById('auth-loading').classList.add('hidden');
+
+    if (role === 'customer' || !caseId || !sampleId) {
+      document.getElementById('not-authorized').classList.remove('hidden');
+      return;
+    }
+
+    document.getElementById('import-content').classList.remove('hidden');
+    document.getElementById('sample-tag').textContent = 'SAMPLE ' + sampleId;
+
+    document.getElementById('import-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const errorEl = document.getElementById('import-error');
+      errorEl.classList.add('hidden');
+      const submitBtn = document.getElementById('import-submit');
+      const file = document.getElementById('profile-file').files[0];
+      const format = document.querySelector('input[name="format"]:checked').value;
+      const laboratory = document.getElementById('lab-name').value.trim();
+
+      if (!file) return;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Validating…';
+
+      try {
+        const { profileId, validation } = await importGeneticProfile({
+          file, format, caseId, sampleId, laboratory, actorUid: user.uid,
+        });
+        showResult(profileId, validation);
+        document.getElementById('import-form').classList.add('hidden');
+      } catch (err) {
+        errorEl.textContent = err.message || 'Import failed. Check the file and try again.';
+        errorEl.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Import & validate';
+      }
+    });
+  });
+
+  function showResult(profileId, validation) {
+    const STATUS_CLASS = { PASS: 'status-ok', WARNING: 'status-warn', FAIL: 'status-fail' };
+    document.getElementById('result-profile-id').textContent = 'PROFILE ' + profileId;
+    const statusEl = document.getElementById('result-status');
+    statusEl.textContent = validation.status;
+    statusEl.className = 'text-sm font-medium ' + STATUS_CLASS[validation.status];
+
+    document.getElementById('metric-total').textContent = validation.metrics.totalMarkers;
+    document.getElementById('metric-missing').textContent = validation.metrics.missingMarkers;
+    document.getElementById('metric-duplicate').textContent = validation.metrics.duplicateMarkers;
+    document.getElementById('metric-invalid').textContent = validation.metrics.invalidMarkers;
+
+    const messages = document.getElementById('result-messages');
+    const all = [
+      ...validation.errors.map((m) => ({ m, cls: 'status-fail' })),
+      ...validation.warnings.map((m) => ({ m, cls: 'status-warn' })),
+    ];
+    messages.innerHTML = all.length
+      ? all.map((x) => `<p class="${x.cls}">${x.m}</p>`).join('')
+      : '<p class="status-ok">No issues found.</p>';
+
+    if (validation.status === 'FAIL') {
+      const note = document.createElement('p');
+      note.className = 'text-slate mt-3';
+      note.textContent = 'This profile is blocked from analysis until a reviewer resolves the issues above.';
+      messages.appendChild(note);
+    }
+
+    document.getElementById('import-result').classList.remove('hidden');
+  }
+</script>
+</body>
+</html>
