@@ -64,7 +64,33 @@
     </div>
   </div>
 
-  <div id="import-notes" class="hidden border border-line bg-white rounded-sm p-4 mb-10 text-[13.5px] space-y-1"></div>
+  <div id="import-notes" class="hidden border border-line bg-white rounded-sm p-4 mb-6 text-[13.5px] space-y-1"></div>
+
+  <section id="qc-section" class="border border-line bg-white rounded-sm p-5 sm:p-6 mb-10">
+    <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
+      <p class="font-serif text-lg">Quality control</p>
+      <span id="analysis-status-badge" class="text-sm font-medium"></span>
+    </div>
+    <p id="qc-status-note" class="text-[13.5px] text-slate mb-4"></p>
+
+    <form id="qc-review-form" class="hidden grid sm:grid-cols-[1fr_auto] gap-3 items-start border-t border-line pt-4">
+      <div class="space-y-3">
+        <div class="flex gap-3">
+          <label class="flex items-center gap-2 text-[14px] border border-line rounded-sm px-3 py-2 cursor-pointer has-[:checked]:border-teal">
+            <input type="radio" name="qc-decision" value="cleared_by_review" checked /> Clear for analysis
+          </label>
+          <label class="flex items-center gap-2 text-[14px] border border-line rounded-sm px-3 py-2 cursor-pointer has-[:checked]:border-teal">
+            <input type="radio" name="qc-decision" value="rejected" /> Reject profile
+          </label>
+        </div>
+        <textarea id="qc-notes" rows="2" placeholder="Reviewer note (required)" required class="w-full border border-line rounded-sm px-3 py-2 text-[14px] focus:border-teal outline-none"></textarea>
+      </div>
+      <button type="submit" class="bg-ink text-paper px-5 py-2.5 rounded-sm text-[14.5px] hover:bg-teal-dark transition-colors self-end">Submit review</button>
+    </form>
+    <p id="qc-review-error" class="hidden text-sm text-fail mt-2"></p>
+
+    <div id="qc-history" class="hidden mt-4 pt-4 border-t border-line space-y-2 text-[13.5px]"></div>
+  </section>
 
   <p class="font-serif text-xl mb-4">Markers</p>
   <div class="border border-line bg-white rounded-sm overflow-x-auto">
@@ -91,11 +117,19 @@
 <script src="/assets/profile-import.js"></script>
 <script>
   const STATUS_CLASS = { PASS: 'status-ok', WARNING: 'status-warn', FAIL: 'status-fail' };
+  const ANALYSIS_STATUS = {
+    ready_for_analysis: { label: 'Ready for analysis', cls: 'status-ok' },
+    blocked: { label: 'Blocked — awaiting review', cls: 'status-fail' },
+    cleared_by_review: { label: 'Cleared by review', cls: 'status-ok' },
+    rejected: { label: 'Rejected', cls: 'status-fail' },
+  };
+  const QC_REVIEWER_ROLES = ['reviewer', 'scientist_analyst', 'laboratory_admin', 'super_admin'];
   const params = new URLSearchParams(window.location.search);
   const profileId = params.get('id');
 
   requireAuth(async (user, profile) => {
     const role = (profile && profile.role) || 'customer';
+    const isReviewer = QC_REVIEWER_ROLES.includes(role);
     document.getElementById('auth-loading').classList.add('hidden');
 
     if (role === 'customer' || !profileId) {
@@ -149,6 +183,57 @@
         <td class="px-4 py-2.5 font-mono">${m.genotype[0] || '—'} / ${m.genotype[1] || '—'}</td>
       </tr>
     `).join('');
+
+    // --- Quality control section ---
+    const analysisStatus = raw.analysisStatus || 'ready_for_analysis';
+    const statusInfo = ANALYSIS_STATUS[analysisStatus] || { label: analysisStatus, cls: '' };
+    const badge = document.getElementById('analysis-status-badge');
+    badge.textContent = statusInfo.label;
+    badge.className = 'text-sm font-medium ' + statusInfo.cls;
+
+    const noteEl = document.getElementById('qc-status-note');
+    if (analysisStatus === 'blocked') {
+      noteEl.textContent = isReviewer
+        ? 'This profile failed import validation. Review the issues above, then record a decision below.'
+        : 'This profile is blocked pending review by a qualified reviewer, analyst, laboratory admin, or super admin.';
+    } else if (analysisStatus === 'ready_for_analysis') {
+      noteEl.textContent = 'No blocking issues were found at import.';
+    } else {
+      noteEl.textContent = 'This profile has been reviewed — see the decision history below.';
+    }
+
+    if (analysisStatus === 'blocked' && isReviewer) {
+      const form = document.getElementById('qc-review-form');
+      form.classList.remove('hidden');
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const errorEl = document.getElementById('qc-review-error');
+        errorEl.classList.add('hidden');
+        const decision = form.querySelector('input[name="qc-decision"]:checked').value;
+        const qcNotes = document.getElementById('qc-notes').value;
+        try {
+          await submitQcReview({
+            profileId, caseId: raw.caseId, sampleId: raw.sampleId,
+            decision, notes: qcNotes, actorUid: user.uid,
+          });
+          window.location.reload();
+        } catch (err) {
+          errorEl.textContent = err.message || 'Could not submit review.';
+          errorEl.classList.remove('hidden');
+        }
+      });
+    }
+
+    const reviews = await listQcReviews(profileId);
+    if (reviews.length) {
+      const historyEl = document.getElementById('qc-history');
+      historyEl.classList.remove('hidden');
+      historyEl.innerHTML = '<p class="text-xs text-slate mb-1">Review history</p>' + reviews.map((r) => {
+        const cls = r.decision === 'cleared_by_review' ? 'status-ok' : 'status-fail';
+        const when = r.reviewedAt && r.reviewedAt.toDate ? r.reviewedAt.toDate().toLocaleString() : 'just now';
+        return `<p><span class="${cls}">${r.decision.replace(/_/g, ' ')}</span> <span class="text-slate">— ${when}</span><br/><span class="text-ink">${r.notes}</span></p>`;
+      }).join('');
+    }
   });
 </script>
 </body>

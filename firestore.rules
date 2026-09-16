@@ -33,6 +33,10 @@ service cloud.firestore {
       return currentRole() == 'super_admin';
     }
 
+    function isReviewerRole() {
+      return currentRole() in ['reviewer', 'scientist_analyst', 'laboratory_admin', 'super_admin'];
+    }
+
     match /users/{userId} {
       // A user can read their own profile; staff can read any profile they
       // need for case assignment. Nobody can read arbitrary customer
@@ -92,8 +96,25 @@ service cloud.firestore {
       // only, same as samples, and never deleted (a failed import stays
       // visible with its FAIL status rather than disappearing, so there's
       // a record of what was attempted).
-      allow read, create, update: if isStaff();
+      //
+      // Changing analysisStatus specifically (clearing or rejecting a
+      // blocked profile) is restricted to reviewer-capable roles, so
+      // whoever imported a profile can't be the one who clears their own
+      // FAIL — see QC_REVIEWER_ROLES in profile-import.js for the client
+      // side of this same rule.
+      allow read, create: if isStaff();
+      allow update: if isStaff()
+                    && (request.resource.data.analysisStatus == resource.data.analysisStatus
+                        || isReviewerRole());
       allow delete: if false;
+    }
+
+    match /qc_reviews/{reviewId} {
+      // Append-only decision trail: a QC review, once recorded, is never
+      // edited or removed — only reviewer-capable roles can create one.
+      allow read: if isStaff();
+      allow create: if isReviewerRole();
+      allow update, delete: if false;
     }
 
     match /audit_logs/{logId} {

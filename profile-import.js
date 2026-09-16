@@ -1,4 +1,5 @@
-// GeneMatch Phase 4/5 — laboratory data import and profile normalization.
+// GeneMatch Phase 4/5/6 — laboratory data import, profile normalization,
+// and quality control review.
 //
 // Architecture (spec section 9):
 //   Laboratory instrument -> instrument adapter -> validation -> normalization
@@ -139,6 +140,40 @@ const IMPORT_ADAPTERS = {
 const REFERENCE_BUILD_REQUIRED_TYPES = ['SNP', 'VARIANT'];
 
 // ---------------------------------------------------------------------------
+// SAMPLE / PROFILE CONSISTENCY CHECK
+// Spec section 11 explicitly calls out "sample/profile mismatch" as a QC
+// failure mode distinct from marker-level problems. This checks that the
+// sample a profile claims to belong to actually exists, actually belongs
+// to the stated case, and flags (without blocking) when a sample already
+// has a profile from a different testing method — which is sometimes
+// intentional (a lab re-testing with a different method) but always worth
+// a reviewer's attention rather than passing silently.
+// ---------------------------------------------------------------------------
+
+async function checkSampleProfileConsistency({ caseId, sampleId, testingMethod }) {
+  const errors = [];
+  const warnings = [];
+
+  const sampleDoc = await db.collection('samples').doc(sampleId).get();
+  if (!sampleDoc.exists) {
+    errors.push(`Sample ${sampleId} has no matching sample record. Register the sample before importing a profile for it.`);
+    return { errors, warnings };
+  }
+  const sample = sampleDoc.data();
+  if (sample.caseId !== caseId) {
+    errors.push(`Sample ${sampleId} belongs to case ${sample.caseId}, not ${caseId}. Check you're importing against the right case.`);
+  }
+
+  const existing = await listProfilesForSample(sampleId);
+  const conflicting = existing.find((p) => p.testingMethod && p.testingMethod !== testingMethod && p.analysisStatus !== 'rejected');
+  if (conflicting) {
+    warnings.push(`This sample already has a profile (${conflicting.profileId}) imported with a different testing method (${conflicting.testingMethod}). Confirm this additional profile is intentional.`);
+  }
+
+  return { errors, warnings };
+}
+
+// ---------------------------------------------------------------------------
 // VALIDATION
 // Checks the content problems spec section 11 calls out, generalized over
 // any marker type rather than assuming STR loci. This intentionally stays
@@ -252,7 +287,17 @@ async function importGeneticProfile({ file, format, caseId, sampleId, laboratory
   const text = await file.text();
   const parsed = adapter(text); // adapter
   if (referenceBuild) parsed.referenceBuild = referenceBuild;
-  const validation = validateProfile(parsed); // validation
+  const markerValidation = validateProfile(parsed); // marker-level validation
+  const consistency = await checkSampleProfileConsistency({ caseId, sampleId, testingMethod: parsed.testingMethod }); // sample/profile mismatch check
+
+  const validation = {
+    errors: [...consistency.errors, ...markerValidation.errors],
+    warnings: [...consistency.warnings, ...markerValidation.warnings],
+    metrics: markerValidation.metrics,
+    status: 'PASS',
+  };
+  if (validation.errors.length) validation.status = 'FAIL';
+  else if (validation.warnings.length) validation.status = 'WARNING';
 
   const profileId = await generateProfileId();
   const now = firebase.firestore.FieldValue.serverTimestamp();
@@ -301,4 +346,47 @@ async function listProfilesForSample(sampleId) {
 async function getProfile(profileId) {
   const doc = await db.collection('genetic_profiles').doc(profileId).get();
   return doc.exists ? doc.data() : null;
+}
+
+// ---------------------------------------------------------------------------
+// QUALITY CONTROL REVIEW
+// Per spec section 11: "a failed quality check should prevent inappropriate
+// analysis until reviewed" — reviewed, not blocked forever. A profile that
+// comes back FAIL is stored with analysisStatus 'blocked'; a qualified
+// reviewer can then either clear it for analysis (they've checked the
+// underlying issue and it's acceptable, or the source data was corrected
+// out of band) or confirm the rejection. Both require a note, and both are
+// recorded permanently in qc_reviews — this is a decision trail, not an
+// editable field, matching the append-only pattern used for custody events.
+// ---------------------------------------------------------------------------
+
+// Deliberately not "any staff": whoever imported a profile shouldn't be the
+// only signature needed to wave their own FAIL through. firestore.rules
+// enforces this same restriction server-side — see isReviewerRole() there.
+const QC_REVIEWER_ROLES = ['reviewer', 'scientist_analyst', 'laboratory_admin', 'super_admin'];
+
+async function submitQcReview({ profileId, caseId, sampleId, decision, notes, actorUid }) {
+  if (!['cleared_by_review', 'rejected'].includes(decision)) {
+    throw new Error('Unknown QC review decision: ' + decision);
+  }
+  if (!notes || !notes.trim()) {
+    throw new Error('A reviewer note is required.');
+  }
+
+  const now = firebase.firestore.FieldValue.serverTimestamp();
+  await db.collection('qc_reviews').add({
+    profileId, caseId, sampleId, decision, notes: notes.trim(),
+    reviewedBy: actorUid, reviewedAt: now,
+  });
+  await db.collection('genetic_profiles').doc(profileId).update({ analysisStatus: decision });
+  await logCustodyEvent({
+    sampleId, caseId, eventType: 'REVIEW', actorUid,
+    notes: `QC review for ${profileId}: ${decision.replace(/_/g, ' ')}.`,
+  });
+  await logAuditEvent('QC_COMPLETED', actorUid, { profileId, caseId, sampleId, decision });
+}
+
+async function listQcReviews(profileId) {
+  const snap = await db.collection('qc_reviews').where('profileId', '==', profileId).orderBy('reviewedAt', 'asc').get();
+  return snap.docs.map((d) => d.data());
 }
