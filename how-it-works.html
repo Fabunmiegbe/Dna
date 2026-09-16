@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>How it works — GeneMatch</title>
+<meta name="description" content="From sample collection to report: how a genetic relationship test moves through the GeneMatch platform." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body data-page="how-it-works" class="font-sans bg-paper text-ink antialiased">
+<div id="site-header"></div>
+
+<main class="max-w-3xl mx-auto px-5 sm:px-8 py-16">
+  <p class="specimen-tag inline-block mb-6">HOW IT WORKS</p>
+  <h1 class="font-serif text-4xl leading-tight mb-6">Nothing here reads DNA. Here's what actually happens at each step.</h1>
+  <p class="text-lg text-slate leading-relaxed mb-14 max-w-2xl">A genetic relationship result is only as trustworthy as the process behind it. GeneMatch is deliberately explicit about which steps are laboratory science and which are software, so nothing gets blurred together.</p>
+
+  <ol class="space-y-12">
+    <li class="grid sm:grid-cols-[7rem_1fr] gap-4 sm:gap-8">
+      <p class="specimen-tag h-fit">STEP 01</p>
+      <div>
+        <p class="font-serif text-xl mb-2">Sample collection</p>
+        <p class="text-slate leading-relaxed text-[15px]">A trained collector takes a biological sample, such as a buccal swab or blood draw, under a documented consent process. The sample receives a unique ID and enters chain-of-custody tracking immediately.</p>
+      </div>
+    </li>
+    <li class="grid sm:grid-cols-[7rem_1fr] gap-4 sm:gap-8">
+      <p class="specimen-tag h-fit">STEP 02</p>
+      <div>
+        <p class="font-serif text-xl mb-2">Laboratory processing</p>
+        <p class="text-slate leading-relaxed text-[15px]">The laboratory extracts DNA and processes it using validated testing, genotyping, or sequencing equipment. This is the only step where DNA is actually read. GeneMatch has no role here.</p>
+      </div>
+    </li>
+    <li class="grid sm:grid-cols-[7rem_1fr] gap-4 sm:gap-8">
+      <p class="specimen-tag h-fit">STEP 03</p>
+      <div>
+        <p class="font-serif text-xl mb-2">Secure data transfer</p>
+        <p class="text-slate leading-relaxed text-[15px]">The instrument output is transferred to GeneMatch through an authenticated import channel or instrument adapter, and validated against the expected format before anything is stored.</p>
+      </div>
+    </li>
+    <li class="grid sm:grid-cols-[7rem_1fr] gap-4 sm:gap-8">
+      <p class="specimen-tag h-fit">STEP 04</p>
+      <div>
+        <p class="font-serif text-xl mb-2">Quality control</p>
+        <p class="text-slate leading-relaxed text-[15px]">Every imported profile is checked for missing markers, invalid values, and sample mismatches before it can be compared. A failed check blocks analysis until a reviewer resolves it.</p>
+      </div>
+    </li>
+    <li class="grid sm:grid-cols-[7rem_1fr] gap-4 sm:gap-8">
+      <p class="specimen-tag h-fit">STEP 05</p>
+      <div>
+        <p class="font-serif text-xl mb-2">Comparison &amp; statistical analysis</p>
+        <p class="text-slate leading-relaxed text-[15px]">GeneMatch compares the profiles marker by marker and applies the statistical methodology appropriate to the relationship being tested, using established scientific methods rather than a single invented score.</p>
+      </div>
+    </li>
+    <li class="grid sm:grid-cols-[7rem_1fr] gap-4 sm:gap-8">
+      <p class="specimen-tag h-fit">STEP 06</p>
+      <div>
+        <p class="font-serif text-xl mb-2">Scientific review</p>
+        <p class="text-slate leading-relaxed text-[15px]">A qualified analyst reviews the statistical result before it can be reported. Software never issues a result without a reviewer in the loop.</p>
+      </div>
+    </li>
+    <li class="grid sm:grid-cols-[7rem_1fr] gap-4 sm:gap-8">
+      <p class="specimen-tag h-fit">STEP 07</p>
+      <div>
+        <p class="font-serif text-xl mb-2">Report</p>
+        <p class="text-slate leading-relaxed text-[15px]">A report is generated stating the method, markers analyzed, statistical result, limitations, and reviewer, with a verification code a third party can check against the system of record.</p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="mt-16 border border-line bg-white rounded-sm p-6">
+    <p class="font-serif text-lg mb-2">A note on language</p>
+    <p class="text-slate leading-relaxed text-[15px]">You'll see "consistent with" rather than "proves" throughout GeneMatch reports. Genetic evidence is statistical. A result states what the data is consistent with under a specified set of assumptions, not an absolute certainty.</p>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="/assets/layout.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Register — GeneMatch</title>
+<meta name="description" content="Create a GeneMatch account to request and track a genetic relationship test." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body data-page="register" class="font-sans bg-paper text-ink antialiased">
+<div id="site-header"></div>
+
+<main class="max-w-sm mx-auto px-5 py-20">
+  <p class="specimen-tag inline-block mb-6">CREATE ACCOUNT</p>
+  <h1 class="font-serif text-3xl leading-tight mb-2">Register</h1>
+  <p class="text-slate text-[15px] mb-8">For individuals requesting and tracking a test. Laboratory and staff accounts are provisioned by an administrator.</p>
+
+  <form id="register-form" class="space-y-5">
+    <div>
+      <label for="fullName" class="block text-sm text-slate mb-1.5">Full name</label>
+      <input id="fullName" type="text" required class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+    </div>
+    <div>
+      <label for="email" class="block text-sm text-slate mb-1.5">Email</label>
+      <input id="email" type="email" required autocomplete="email" class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+    </div>
+    <div>
+      <label for="phone" class="block text-sm text-slate mb-1.5">Phone</label>
+      <input id="phone" type="tel" required class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+    </div>
+    <div>
+      <label for="country" class="block text-sm text-slate mb-1.5">Country</label>
+      <input id="country" type="text" required class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+    </div>
+    <div>
+      <label for="password" class="block text-sm text-slate mb-1.5">Password</label>
+      <input id="password" type="password" required minlength="8" autocomplete="new-password" class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+      <p class="text-xs text-slate mt-1">At least 8 characters. You'll be prompted to set up multi-factor authentication after your first login.</p>
+    </div>
+
+    <label class="flex items-start gap-3 text-sm text-slate">
+      <input type="checkbox" required class="mt-1" />
+      <span>I agree to the <a href="/terms.html" class="text-teal hover:text-teal-dark">terms of service</a> and <a href="/privacy.html" class="text-teal hover:text-teal-dark">privacy policy</a>.</span>
+    </label>
+
+    <p id="register-error" class="text-sm text-fail hidden"></p>
+
+    <button type="submit" class="w-full bg-ink text-paper px-6 py-3 rounded-sm text-[15px] hover:bg-teal-dark transition-colors">Create account</button>
+  </form>
+
+  <p class="text-sm text-slate mt-6">Already have an account? <a href="/login.html" class="text-teal hover:text-teal-dark">Log in</a></p>
+</main>
+
+<div id="site-footer"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="/assets/firebase-config.js"></script>
+<script src="/assets/auth.js"></script>
+<script src="/assets/layout.js"></script>
+<script>
+  document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorEl = document.getElementById('register-error');
+    errorEl.classList.add('hidden');
+    try {
+      await registerCustomer({
+        fullName: document.getElementById('fullName').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        country: document.getElementById('country').value.trim(),
+        password: document.getElementById('password').value,
+      });
+      window.location.href = '/dashboard.html';
+    } catch (err) {
+      errorEl.textContent = friendlyAuthError(err);
+      errorEl.classList.remove('hidden');
+    }
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Consent Information — GeneMatch</title>
+<meta name="description" content="How consent works for genetic testing through GeneMatch, and how withdrawal is handled." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body data-page="consent" class="font-sans bg-paper text-ink antialiased">
+<div id="site-header"></div>
+
+<main class="max-w-2xl mx-auto px-5 sm:px-8 py-16">
+  <p class="specimen-tag inline-block mb-6">CONSENT INFORMATION</p>
+  <h1 class="font-serif text-4xl leading-tight mb-6">Consent, in plain terms</h1>
+  <p class="text-slate leading-relaxed text-[15px] mb-10">Genetic information is sensitive. Before any sample is processed, GeneMatch requires a documented consent record tied to a specific, named purpose. This page explains what that means in practice.</p>
+
+  <div class="space-y-8 text-[15px] text-slate leading-relaxed">
+    <section>
+      <p class="font-serif text-xl text-ink mb-2">What consent covers</p>
+      <p>Each consent record is tied to one purpose, such as a specific parentage or relationship case. Consent for one purpose does not automatically extend to another. If a laboratory or requesting party wants to use your sample or profile for something beyond the original purpose, a new consent record is required.</p>
+    </section>
+    <section>
+      <p class="font-serif text-xl text-ink mb-2">What we record</p>
+      <p>Consent status, the version of the consent form presented, the date and time it was given, who provided it, the authorized purpose, and an electronic signature or another approved consent mechanism.</p>
+    </section>
+    <section>
+      <p class="font-serif text-xl text-ink mb-2">Consent for minors</p>
+      <p>Where a sample donor is a minor, consent is obtained from a parent or legal guardian as required by applicable law, and this is recorded alongside the donor's own information. [Confirm exact requirements for your jurisdiction with counsel.]</p>
+    </section>
+    <section>
+      <p class="font-serif text-xl text-ink mb-2">Withdrawing consent</p>
+      <p>You can request withdrawal of consent where your case's stage and applicable law allow it. Withdrawal is recorded with a date and status. Depending on the stage of your case, withdrawal may stop further processing but may not remove data already required for legal or laboratory-accreditation recordkeeping. Ask your case manager what withdrawal means for your specific case.</p>
+    </section>
+    <section>
+      <p class="font-serif text-xl text-ink mb-2">Questions</p>
+      <p>If anything about consent for your case is unclear, contact your assigned case manager directly, or reach us through the <a href="/contact.html" class="text-teal hover:text-teal-dark">contact page</a>.</p>
+    </section>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="/assets/layout.js"></script>
+</body>
+</html>

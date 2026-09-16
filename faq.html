@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FAQ — GeneMatch</title>
+<meta name="description" content="Common questions about how GeneMatch works, what it can and can't do, and how results are produced." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body data-page="faq" class="font-sans bg-paper text-ink antialiased">
+<div id="site-header"></div>
+
+<main class="max-w-3xl mx-auto px-5 sm:px-8 py-16">
+  <p class="specimen-tag inline-block mb-6">FAQ</p>
+  <h1 class="font-serif text-4xl leading-tight mb-12">Frequently asked questions</h1>
+
+  <div class="space-y-10">
+    <div class="border-b border-line pb-8">
+      <p class="font-serif text-xl mb-2">Can GeneMatch read DNA from a photo, blood sample, or fingerprint?</p>
+      <p class="text-slate leading-relaxed text-[15px]">No. No camera, phone, or photograph can read DNA. Genetic profiles are produced only by accredited laboratories using validated testing, genotyping, or sequencing equipment. GeneMatch begins after that profile exists.</p>
+    </div>
+    <div class="border-b border-line pb-8">
+      <p class="font-serif text-xl mb-2">Is a GeneMatch report legally valid?</p>
+      <p class="text-slate leading-relaxed text-[15px]">It depends on your jurisdiction and whether the case followed a legally recognized chain-of-custody process. GeneMatch does not automatically mark a result as legally valid; each case has a configurable legal or forensic review requirement set according to where the test is being used.</p>
+    </div>
+    <div class="border-b border-line pb-8">
+      <p class="font-serif text-xl mb-2">What does "consistent with" mean instead of "proves"?</p>
+      <p class="text-slate leading-relaxed text-[15px]">Genetic relationship evidence is statistical. A result states what the observed data is consistent with, under a specified set of assumptions and a stated methodology, rather than claiming absolute certainty.</p>
+    </div>
+    <div class="border-b border-line pb-8">
+      <p class="font-serif text-xl mb-2">What happens if a sample fails quality control?</p>
+      <p class="text-slate leading-relaxed text-[15px]">A failed quality check blocks the profile from being used in comparison or analysis until a laboratory reviewer resolves it. Results are never produced from data flagged as failing.</p>
+    </div>
+    <div class="border-b border-line pb-8">
+      <p class="font-serif text-xl mb-2">Who can see my genetic data?</p>
+      <p class="text-slate leading-relaxed text-[15px]">Access is restricted by role. Only the laboratory staff and reviewers assigned to your case can view your profile, and every access is logged. See our <a href="/privacy.html" class="text-teal hover:text-teal-dark">privacy policy</a> for detail on retention and sharing.</p>
+    </div>
+    <div class="border-b border-line pb-8">
+      <p class="font-serif text-xl mb-2">Can I withdraw consent after testing has started?</p>
+      <p class="text-slate leading-relaxed text-[15px]">You can withdraw consent where applicable law and your case's stage allow it. See <a href="/consent.html" class="text-teal hover:text-teal-dark">consent information</a> for how withdrawal is recorded and what it affects.</p>
+    </div>
+    <div>
+      <p class="font-serif text-xl mb-2">How do I start a test?</p>
+      <p class="text-slate leading-relaxed text-[15px]">Visit <a href="/request-test.html" class="text-teal hover:text-teal-dark">request a test</a> to see sample types, consent requirements, and next steps.</p>
+    </div>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="/assets/layout.js"></script>
+</body>
+</html>

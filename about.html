@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>About — GeneMatch</title>
+<meta name="description" content="GeneMatch builds the software infrastructure that laboratories use to manage cases, import genetic profiles, and issue relationship analysis reports." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body data-page="about" class="font-sans bg-paper text-ink antialiased">
+<div id="site-header"></div>
+
+<main class="max-w-3xl mx-auto px-5 sm:px-8 py-16">
+  <p class="specimen-tag inline-block mb-6">ABOUT</p>
+  <h1 class="font-serif text-4xl leading-tight mb-6">Software for the part of DNA testing that happens after the laboratory.</h1>
+  <p class="text-lg text-slate leading-relaxed mb-6">A DNA relationship test has two halves. The first is scientific: a laboratory extracts, reads, and quality-checks genetic material using validated equipment. The second is operational: tracking who submitted what, comparing profiles correctly, applying the right statistical method, and producing a report someone can trust and verify. GeneMatch builds the second half.</p>
+  <p class="text-slate leading-relaxed mb-6">We started GeneMatch after watching laboratories manage cases across spreadsheets, email threads, and paper chain-of-custody forms, with results explained in ways that overstated what the underlying science actually supported. The goal was a system that keeps every claim tied to a method, a dataset, and a named reviewer, so a report never says more than the data allows.</p>
+  <p class="text-slate leading-relaxed mb-10">GeneMatch is not a laboratory and does not perform DNA testing. We partner with accredited laboratories who handle sample collection and genetic analysis; our platform manages everything from case creation through the final report.</p>
+
+  <div class="border-t border-line pt-10 grid sm:grid-cols-2 gap-8">
+    <div>
+      <p class="font-serif text-xl mb-2">What we build</p>
+      <ul class="text-slate leading-relaxed text-[15px] space-y-1.5">
+        <li>Case and sample management</li>
+        <li>Laboratory data ingestion and validation</li>
+        <li>Profile comparison and statistical analysis</li>
+        <li>Verifiable report generation</li>
+        <li>Role-based access and audit logging</li>
+      </ul>
+    </div>
+    <div>
+      <p class="font-serif text-xl mb-2">What we don't do</p>
+      <ul class="text-slate leading-relaxed text-[15px] space-y-1.5">
+        <li>Collect or physically test biological samples</li>
+        <li>Read DNA from photographs or camera images</li>
+        <li>Declare a legal result without laboratory data</li>
+        <li>Let software override a qualified reviewer</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="/assets/layout.js"></script>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Laboratory partners — GeneMatch</title>
+<meta name="description" content="How accredited laboratories connect to GeneMatch, from data import formats to instrument integration." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body data-page="laboratory-partners" class="font-sans bg-paper text-ink antialiased">
+<div id="site-header"></div>
+
+<main class="max-w-3xl mx-auto px-5 sm:px-8 py-16">
+  <p class="specimen-tag inline-block mb-6">LABORATORY PARTNERS</p>
+  <h1 class="font-serif text-4xl leading-tight mb-6">Your instruments stay yours. GeneMatch adapts to your output.</h1>
+  <p class="text-lg text-slate leading-relaxed mb-10 max-w-2xl">GeneMatch doesn't ask a laboratory to change how it tests. An adapter layer sits between your instrument's native output and GeneMatch's internal profile format, so onboarding doesn't require replacing existing equipment or workflows.</p>
+
+  <div class="border border-line bg-white rounded-sm p-6 mb-12 font-mono text-[13px] text-slate leading-loose">
+    <p>Laboratory instrument</p>
+    <p class="text-teal">&darr; instrument adapter</p>
+    <p>Validation</p>
+    <p class="text-teal">&darr;</p>
+    <p>Normalization</p>
+    <p class="text-teal">&darr;</p>
+    <p>Internal genetic profile format (versioned)</p>
+  </div>
+
+  <div class="grid sm:grid-cols-2 gap-10 mb-14">
+    <div>
+      <p class="font-serif text-xl mb-2">Supported import formats</p>
+      <p class="text-slate leading-relaxed text-[15px]">CSV, TSV, JSON, XML, and, where applicable to the testing method, FASTA and VCF. Laboratory-specific formats are handled through a dedicated adapter rather than assuming every platform outputs data the same way.</p>
+    </div>
+    <div>
+      <p class="font-serif text-xl mb-2">Quality control on import</p>
+      <p class="text-slate leading-relaxed text-[15px]">Every import is checked for missing markers, invalid allele formats, duplicate markers, and sample mismatches before it becomes available for comparison. Failed checks are held for review, not silently passed through.</p>
+    </div>
+    <div>
+      <p class="font-serif text-xl mb-2">Role-based dashboards</p>
+      <p class="text-slate leading-relaxed text-[15px]">Separate views and permissions for laboratory admins, technicians, analysts, and reviewers, so staff only see what their role requires.</p>
+    </div>
+    <div>
+      <p class="font-serif text-xl mb-2">Full audit trail</p>
+      <p class="text-slate leading-relaxed text-[15px]">Sample transfers, data imports, analysis runs, and report generation are all logged with a timestamp and an authenticated user, and are tamper-resistant once recorded.</p>
+    </div>
+  </div>
+
+  <div class="border-t border-line pt-10">
+    <p class="font-serif text-xl mb-3">Becoming a partner laboratory</p>
+    <p class="text-slate leading-relaxed text-[15px] mb-6 max-w-xl">Partner onboarding starts with a review of your instrument's data output and your jurisdiction's applicable regulatory requirements. Reach out and we'll walk through what integration looks like for your equipment.</p>
+    <a href="/contact.html" class="inline-block bg-ink text-paper px-6 py-3 rounded-sm text-[15px] hover:bg-teal-dark transition-colors">Get in touch</a>
+  </div>
+</main>
+
+<div id="site-footer"></div>
+<script src="/assets/layout.js"></script>
+</body>
+</html>

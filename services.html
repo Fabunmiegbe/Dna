@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Testing services — GeneMatch</title>
+<meta name="description" content="DNA testing, relationship testing, parentage testing, and genetic profile comparison, explained plainly and without overstating what the science supports." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body data-page="services" class="font-sans bg-paper text-ink antialiased">
+<div id="site-header"></div>
+
+<main class="max-w-3xl mx-auto px-5 sm:px-8 py-16">
+  <p class="specimen-tag inline-block mb-6">TESTING SERVICES</p>
+  <h1 class="font-serif text-4xl leading-tight mb-6">Four ways GeneMatch is used, all built on the same laboratory-first process.</h1>
+  <p class="text-lg text-slate leading-relaxed mb-10 max-w-2xl">Each service below describes a use case for the same underlying platform. In every case, the genetic profile comes from an accredited laboratory. GeneMatch handles the case management, comparison, and reporting around it.</p>
+
+  <nav class="flex flex-wrap gap-3 mb-16 border-y border-line py-4 text-sm">
+    <a href="#dna-testing" class="text-slate hover:text-teal">DNA testing</a>
+    <span class="text-line">/</span>
+    <a href="#relationship-testing" class="text-slate hover:text-teal">Relationship testing</a>
+    <span class="text-line">/</span>
+    <a href="#parentage-testing" class="text-slate hover:text-teal">Parentage testing</a>
+    <span class="text-line">/</span>
+    <a href="#profile-comparison" class="text-slate hover:text-teal">Profile comparison</a>
+  </nav>
+
+  <section id="dna-testing" class="mb-16 scroll-mt-20">
+    <p class="font-serif text-2xl mb-4">DNA testing</p>
+    <p class="text-slate leading-relaxed text-[15px] mb-3">DNA testing is the laboratory step: extracting genetic material from a sample and reading it with validated testing, genotyping, or sequencing equipment. GeneMatch does not perform this step. We coordinate the request, track the sample, and receive the resulting profile from a partner laboratory.</p>
+    <p class="text-slate leading-relaxed text-[15px]">If you're looking to start a test, the <a href="/request-test.html" class="text-teal hover:text-teal-dark">request a test</a> page walks through sample types, consent requirements, and what happens after collection.</p>
+  </section>
+
+  <section id="relationship-testing" class="mb-16 scroll-mt-20">
+    <p class="font-serif text-2xl mb-4">Relationship testing</p>
+    <p class="text-slate leading-relaxed text-[15px] mb-3">Beyond parent and child, GeneMatch supports comparison against sibling, half-sibling, grandparent-grandchild, and avuncular hypotheses. The analysis engine compares competing hypotheses rather than testing a single assumed relationship in isolation, which matters when the people involved aren't sure which relationship they're actually checking.</p>
+    <p class="text-slate leading-relaxed text-[15px]">Every relationship report states the method used, the reference dataset, and the analyst who reviewed it.</p>
+  </section>
+
+  <section id="parentage-testing" class="mb-16 scroll-mt-20">
+    <p class="font-serif text-2xl mb-4">Parentage testing</p>
+    <p class="text-slate leading-relaxed text-[15px] mb-3">Parentage cases compare a child's profile against one or both alleged parents. GeneMatch's statistical engine supports exclusion, inclusion and compatibility analysis, and likelihood ratio calculations, using population allele frequency data configured by the laboratory's scientific team.</p>
+    <p class="text-slate leading-relaxed text-[15px]">A parentage report from GeneMatch is a software-generated document based on laboratory data. Whether it carries legal weight depends on the jurisdiction and whether the case followed a legally recognized chain-of-custody and testing process; GeneMatch surfaces a configurable flag for this rather than deciding it automatically.</p>
+  </section>
+
+  <section id="profile-comparison" class="mb-4 scroll-mt-20">
+    <p class="font-serif text-2xl mb-4">Genetic profile comparison</p>
+    <p class="text-slate leading-relaxed text-[15px] mb-3">At the core of every service above is the same comparison engine: two or more genetic profiles, checked marker by marker, with matching markers, non-matching markers, missing data, and quality warnings all reported separately rather than collapsed into a single "match percentage."</p>
+    <p class="text-slate leading-relaxed text-[15px]">A percentage-style score is only shown where it has a scientifically valid interpretation for the specific test performed. Otherwise, results are reported as likelihood ratios or probabilities with their assumptions stated alongside them.</p>
+  </section>
+</main>
+
+<div id="site-footer"></div>
+<script src="/assets/layout.js"></script>
+</body>
+</html>

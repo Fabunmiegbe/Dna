@@ -1,0 +1,61 @@
+rules_version = '2';
+
+// GeneMatch Firestore security rules — Phase 2 scope.
+// Covers the `users` collection only, since case/sample/profile collections
+// land in Phase 3 onward. Extend this file as those collections are added;
+// do not rely on client-side nav hiding as the access boundary.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function currentRole() {
+      return isSignedIn()
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role
+        : null;
+    }
+
+    function isStaff() {
+      return currentRole() in [
+        'super_admin', 'laboratory_admin', 'laboratory_technician',
+        'case_manager', 'scientist_analyst', 'reviewer', 'auditor'
+      ];
+    }
+
+    function isSuperAdmin() {
+      return currentRole() == 'super_admin';
+    }
+
+    match /users/{userId} {
+      // A user can read their own profile; staff can read any profile they
+      // need for case assignment. Nobody can read arbitrary customer
+      // profiles they aren't otherwise entitled to see.
+      allow read: if isOwner(userId) || isStaff();
+
+      // Self-registration always creates role "customer" — never a staff
+      // role — and the role field can never be self-assigned to anything
+      // else. Only a Super Admin can change someone's role after creation.
+      allow create: if isOwner(userId)
+                    && request.resource.data.role == 'customer';
+
+      allow update: if isOwner(userId)
+                    && request.resource.data.role == resource.data.role
+                    || isSuperAdmin();
+
+      allow delete: if isSuperAdmin();
+    }
+
+    // Everything else is closed by default until its Phase lands with its
+    // own explicit rule (cases in Phase 3, genetic_profiles in Phase 5, etc).
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

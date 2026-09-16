@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Request a test — GeneMatch</title>
+<meta name="description" content="Start a genetic relationship test request. GeneMatch will connect your request to an accredited laboratory." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    colors: { ink:'#10202E','ink-2':'#1C3145', paper:'#F5F6F3', teal:{DEFAULT:'#1F6F67',dark:'#16504A'}, slate:'#48607A', line:'#DADFDC', ok:'#2E7D5B', warn:'#B8863A', fail:'#A6362C' },
+    fontFamily: { serif:['Newsreader','Georgia','serif'], sans:['Inter','ui-sans-serif','sans-serif'], mono:['IBM Plex Mono','ui-monospace','monospace'] }
+  } } };
+</script>
+<link rel="stylesheet" href="/assets/styles.css" />
+</head>
+<body data-page="request-test" class="font-sans bg-paper text-ink antialiased">
+<div id="site-header"></div>
+
+<main class="max-w-3xl mx-auto px-5 sm:px-8 py-16">
+  <p class="specimen-tag inline-block mb-6">REQUEST A TEST</p>
+  <h1 class="font-serif text-4xl leading-tight mb-6">Start a request</h1>
+  <p class="text-lg text-slate leading-relaxed mb-10 max-w-2xl">This creates a case and connects you with a laboratory partner for sample collection. No DNA is processed on this page or anywhere on this website; testing happens at the accredited laboratory you're matched with.</p>
+
+  <div class="grid sm:grid-cols-3 gap-4 mb-14 text-sm">
+    <div class="border border-line bg-white rounded-sm p-4">
+      <p class="specimen-tag inline-block mb-2">STEP 1</p>
+      <p class="text-ink">Submit this request</p>
+    </div>
+    <div class="border border-line bg-white rounded-sm p-4">
+      <p class="specimen-tag inline-block mb-2">STEP 2</p>
+      <p class="text-ink">Review consent and schedule collection</p>
+    </div>
+    <div class="border border-line bg-white rounded-sm p-4">
+      <p class="specimen-tag inline-block mb-2">STEP 3</p>
+      <p class="text-ink">Laboratory processes the sample, GeneMatch handles the rest</p>
+    </div>
+  </div>
+
+  <form class="border border-line bg-white rounded-sm p-6 sm:p-8 space-y-6" onsubmit="return false;">
+    <div>
+      <p class="font-serif text-xl mb-4">Test type</p>
+      <div class="grid sm:grid-cols-2 gap-3">
+        <label class="flex items-center gap-2.5 border border-line rounded-sm px-4 py-3 text-[15px] cursor-pointer has-[:checked]:border-teal">
+          <input type="radio" name="testType" value="parentage" checked />
+          Parentage testing
+        </label>
+        <label class="flex items-center gap-2.5 border border-line rounded-sm px-4 py-3 text-[15px] cursor-pointer has-[:checked]:border-teal">
+          <input type="radio" name="testType" value="sibling" />
+          Sibling / relationship testing
+        </label>
+        <label class="flex items-center gap-2.5 border border-line rounded-sm px-4 py-3 text-[15px] cursor-pointer has-[:checked]:border-teal">
+          <input type="radio" name="testType" value="family" />
+          Other family relationship
+        </label>
+        <label class="flex items-center gap-2.5 border border-line rounded-sm px-4 py-3 text-[15px] cursor-pointer has-[:checked]:border-teal">
+          <input type="radio" name="testType" value="identity" />
+          Identity comparison
+        </label>
+      </div>
+    </div>
+
+    <div class="grid sm:grid-cols-2 gap-5">
+      <div>
+        <label for="fullname" class="block text-sm text-slate mb-1.5">Full name</label>
+        <input id="fullname" type="text" required class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+      </div>
+      <div>
+        <label for="reqemail" class="block text-sm text-slate mb-1.5">Email</label>
+        <input id="reqemail" type="email" required class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+      </div>
+      <div>
+        <label for="reqphone" class="block text-sm text-slate mb-1.5">Phone</label>
+        <input id="reqphone" type="tel" required class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+      </div>
+      <div>
+        <label for="participants" class="block text-sm text-slate mb-1.5">Number of participants</label>
+        <select id="participants" class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none bg-white">
+          <option>2</option>
+          <option>3</option>
+          <option>4+</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label for="notes" class="block text-sm text-slate mb-1.5">Anything the case manager should know</label>
+      <textarea id="notes" rows="3" class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none"></textarea>
+    </div>
+
+    <label class="flex items-start gap-3 text-sm text-slate">
+      <input type="checkbox" required class="mt-1" />
+      <span>I understand that a laboratory will need to collect a physical sample, and that no result will be produced from a photo or image. I have read the <a href="/consent.html" class="text-teal hover:text-teal-dark">consent information</a> page.</span>
+    </label>
+
+    <button type="submit" class="bg-ink text-paper px-6 py-3 rounded-sm text-[15px] hover:bg-teal-dark transition-colors">Submit request</button>
+    <p class="text-xs text-slate">This is a UI placeholder. Wire this form to the case-creation API (<span class="font-mono">POST /api/cases</span>) before going live.</p>
+  </form>
+</main>
+
+<div id="site-footer"></div>
+<script src="/assets/layout.js"></script>
+</body>
+</html>
