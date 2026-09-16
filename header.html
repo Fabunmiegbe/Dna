@@ -1,0 +1,62 @@
+<header class="border-b border-line bg-paper sticky top-0 z-50">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8">
+    <div class="flex items-center justify-between h-16">
+      <a href="/index.html" class="flex items-center gap-2 shrink-0">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M6 2C6 7 20 7 20 13C20 19 6 19 6 24" stroke="#1F6F67" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M20 2C20 7 6 7 6 13C6 19 20 19 20 24" stroke="#10202E" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>
+          <line x1="7.3" y1="5.4" x2="18.7" y2="5.4" stroke="#1F6F67" stroke-width="1.3"/>
+          <line x1="6.4" y1="13" x2="19.6" y2="13" stroke="#10202E" stroke-width="1.3" opacity="0.55"/>
+          <line x1="7.3" y1="20.6" x2="18.7" y2="20.6" stroke="#1F6F67" stroke-width="1.3"/>
+        </svg>
+        <span class="font-serif text-lg tracking-tight text-ink">GeneMatch</span>
+      </a>
+
+      <nav class="hidden lg:flex items-center gap-7 font-sans text-[14.5px] text-ink">
+        <a href="/about.html" class="nav-link hover:text-teal transition-colors">About</a>
+        <a href="/how-it-works.html" class="nav-link hover:text-teal transition-colors">How it works</a>
+        <div class="relative group">
+          <button class="nav-link hover:text-teal transition-colors flex items-center gap-1" aria-haspopup="true">
+            Testing services
+            <svg width="10" height="6" viewBox="0 0 10 6" fill="none" class="mt-px"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </button>
+          <div class="absolute left-0 top-full pt-2 hidden group-hover:block group-focus-within:block">
+            <div class="w-64 bg-white border border-line shadow-sm rounded-sm py-2">
+              <a href="/services.html#dna-testing" class="block px-4 py-2 text-sm hover:bg-paper hover:text-teal">DNA testing</a>
+              <a href="/services.html#relationship-testing" class="block px-4 py-2 text-sm hover:bg-paper hover:text-teal">Relationship testing</a>
+              <a href="/services.html#parentage-testing" class="block px-4 py-2 text-sm hover:bg-paper hover:text-teal">Parentage testing</a>
+              <a href="/services.html#profile-comparison" class="block px-4 py-2 text-sm hover:bg-paper hover:text-teal">Genetic profile comparison</a>
+            </div>
+          </div>
+        </div>
+        <a href="/laboratory-partners.html" class="nav-link hover:text-teal transition-colors">Laboratory partners</a>
+        <a href="/faq.html" class="nav-link hover:text-teal transition-colors">FAQ</a>
+        <a href="/contact.html" class="nav-link hover:text-teal transition-colors">Contact</a>
+      </nav>
+
+      <div class="hidden lg:flex items-center gap-3">
+        <a href="/login.html" class="text-[14.5px] text-ink hover:text-teal transition-colors">Log in</a>
+        <a href="/request-test.html" class="text-[14.5px] bg-ink text-paper px-4 py-2 rounded-sm hover:bg-teal-dark transition-colors">Request a test</a>
+      </div>
+
+      <button id="menu-toggle" class="lg:hidden p-2 -mr-2" aria-label="Open menu" aria-expanded="false">
+        <svg width="22" height="16" viewBox="0 0 22 16" fill="none"><line x1="0" y1="1" x2="22" y2="1" stroke="#10202E" stroke-width="1.6"/><line x1="0" y1="8" x2="22" y2="8" stroke="#10202E" stroke-width="1.6"/><line x1="0" y1="15" x2="22" y2="15" stroke="#10202E" stroke-width="1.6"/></svg>
+      </button>
+    </div>
+
+    <div id="mobile-menu" class="hidden lg:hidden pb-5 border-t border-line pt-4">
+      <div class="flex flex-col gap-3.5 font-sans text-[15px] text-ink">
+        <a href="/about.html">About</a>
+        <a href="/how-it-works.html">How it works</a>
+        <a href="/services.html">Testing services</a>
+        <a href="/laboratory-partners.html">Laboratory partners</a>
+        <a href="/faq.html">FAQ</a>
+        <a href="/contact.html">Contact</a>
+        <div class="flex gap-3 pt-2">
+          <a href="/login.html" class="flex-1 text-center border border-line px-4 py-2 rounded-sm">Log in</a>
+          <a href="/request-test.html" class="flex-1 text-center bg-ink text-paper px-4 py-2 rounded-sm">Request a test</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
