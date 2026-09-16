@@ -166,7 +166,7 @@
           <a href="/import.html?caseId=${caseId}&sampleId=${s.sampleId}" class="text-xs text-teal hover:text-teal-dark">+ Import profile</a>
         </div>
         ${profiles.length
-          ? `<ul class="space-y-1 text-[13.5px] mb-4">${profiles.map((p) => `<li class="flex items-center gap-2"><span class="font-mono text-slate">${p.profileId}</span><span class="${STATUS_CLASS[p.importStatus] || ''}">${p.importStatus}</span><span class="text-slate">· ${p.qualityMetrics ? p.qualityMetrics.totalMarkers : 0} markers</span></li>`).join('')}</ul>`
+          ? `<ul class="space-y-1 text-[13.5px] mb-4">${profiles.map((p) => `<li class="flex items-center gap-2"><a href="/profile.html?id=${p.profileId}" class="font-mono text-teal hover:text-teal-dark">${p.profileId}</a><span class="${STATUS_CLASS[p.importStatus] || ''}">${p.importStatus}</span><span class="text-slate">· ${p.qualityMetrics ? p.qualityMetrics.totalMarkers : 0} markers</span></li>`).join('')}</ul>`
           : `<p class="text-[13.5px] text-slate mb-4">No profile imported yet.</p>`}
 
         <p class="text-xs text-slate mb-2">Chain of custody</p>

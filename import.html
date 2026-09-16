@@ -45,17 +45,27 @@
   <form id="import-form" class="border border-line bg-white rounded-sm p-6 sm:p-8 space-y-6">
     <div>
       <label class="block text-sm text-slate mb-1.5">File format</label>
-      <div class="grid grid-cols-2 gap-3">
-        <label class="flex items-center gap-2.5 border border-line rounded-sm px-4 py-3 text-[15px] cursor-pointer has-[:checked]:border-teal">
-          <input type="radio" name="format" value="csv" checked />
-          CSV (locus, allele1, allele2)
+      <div class="grid sm:grid-cols-3 gap-3">
+        <label class="flex items-center gap-2.5 border border-line rounded-sm px-4 py-3 text-[14.5px] cursor-pointer has-[:checked]:border-teal">
+          <input type="radio" name="format" value="str_csv" checked />
+          STR CSV (locus, allele1, allele2)
         </label>
-        <label class="flex items-center gap-2.5 border border-line rounded-sm px-4 py-3 text-[15px] cursor-pointer has-[:checked]:border-teal">
+        <label class="flex items-center gap-2.5 border border-line rounded-sm px-4 py-3 text-[14.5px] cursor-pointer has-[:checked]:border-teal">
+          <input type="radio" name="format" value="snp_csv" />
+          SNP array CSV (rsid, allele1, allele2)
+        </label>
+        <label class="flex items-center gap-2.5 border border-line rounded-sm px-4 py-3 text-[14.5px] cursor-pointer has-[:checked]:border-teal">
           <input type="radio" name="format" value="json" />
           JSON
         </label>
       </div>
       <p class="text-xs text-slate mt-2">TSV, XML, FASTA, VCF, and laboratory-specific adapters can be added to <span class="font-mono">assets/profile-import.js</span> as they're needed — see the adapter architecture note in the README.</p>
+    </div>
+
+    <div id="reference-build-field" class="hidden">
+      <label for="reference-build" class="block text-sm text-slate mb-1.5">Reference genome build</label>
+      <input id="reference-build" type="text" placeholder="e.g. GRCh38" class="w-full border border-line rounded-sm px-3 py-2.5 text-[15px] focus:border-teal outline-none" />
+      <p class="text-xs text-slate mt-1.5">Required for SNP or variant-based markers — genome coordinates only mean something relative to a stated build.</p>
     </div>
 
     <div>
@@ -116,6 +126,14 @@
     document.getElementById('import-content').classList.remove('hidden');
     document.getElementById('sample-tag').textContent = 'SAMPLE ' + sampleId;
 
+    const refBuildField = document.getElementById('reference-build-field');
+    function syncReferenceBuildVisibility() {
+      const format = document.querySelector('input[name="format"]:checked').value;
+      refBuildField.classList.toggle('hidden', format === 'str_csv');
+    }
+    document.querySelectorAll('input[name="format"]').forEach((el) => el.addEventListener('change', syncReferenceBuildVisibility));
+    syncReferenceBuildVisibility();
+
     document.getElementById('import-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const errorEl = document.getElementById('import-error');
@@ -124,6 +142,7 @@
       const file = document.getElementById('profile-file').files[0];
       const format = document.querySelector('input[name="format"]:checked').value;
       const laboratory = document.getElementById('lab-name').value.trim();
+      const referenceBuild = document.getElementById('reference-build').value.trim();
 
       if (!file) return;
       submitBtn.disabled = true;
@@ -131,7 +150,7 @@
 
       try {
         const { profileId, validation } = await importGeneticProfile({
-          file, format, caseId, sampleId, laboratory, actorUid: user.uid,
+          file, format, caseId, sampleId, laboratory, referenceBuild, actorUid: user.uid,
         });
         showResult(profileId, validation);
         document.getElementById('import-form').classList.add('hidden');
