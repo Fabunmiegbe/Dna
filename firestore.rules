@@ -52,8 +52,57 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
 
+    // -----------------------------------------------------------------
+    // PHASE 3 — cases, samples, chain of custody
+    // -----------------------------------------------------------------
+
+    match /cases/{caseId} {
+      // A customer can create their own case (request-test.html) and read
+      // it back; they can never set its status, assignment, or any staff
+      // field themselves. Staff can read and update any case.
+      allow create: if isSignedIn()
+                    && request.resource.data.createdBy == request.auth.uid
+                    && request.resource.data.status == 'submitted';
+
+      allow read: if isSignedIn()
+                  && (resource.data.createdBy == request.auth.uid || isStaff());
+
+      allow update: if isStaff();
+      allow delete: if isSuperAdmin();
+    }
+
+    match /samples/{sampleId} {
+      // Samples carry donor/participant identifiers and storage detail —
+      // per spec section 6, don't expose more than necessary through a
+      // sample record, so this stays staff-only rather than also granting
+      // the owning customer direct read access.
+      allow read, create, update: if isStaff();
+      allow delete: if false; // samples are never deleted, only status-changed
+    }
+
+    match /custody_events/{eventId} {
+      // Append-only: staff can log an event, nobody can edit or remove one
+      // once written, per the immutability requirement in spec section 7.
+      allow read, create: if isStaff();
+      allow update, delete: if false;
+    }
+
+    match /audit_logs/{logId} {
+      allow create: if isSignedIn();
+      allow read: if isStaff();
+      allow update, delete: if false;
+    }
+
+    match /counters/{counterId} {
+      // Sequence counters for case/sample IDs. Any signed-in user needs
+      // write access here because customers generate case IDs directly
+      // from request-test.html. See the security note in case-data.js —
+      // this is a deliberate MVP simplification, not a settled answer.
+      allow read, write: if isSignedIn();
+    }
+
     // Everything else is closed by default until its Phase lands with its
-    // own explicit rule (cases in Phase 3, genetic_profiles in Phase 5, etc).
+    // own explicit rule (genetic_profiles in Phase 5, reports in Phase 8, etc).
     match /{document=**} {
       allow read, write: if false;
     }

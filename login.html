@@ -45,7 +45,7 @@
     <button type="submit" class="w-full bg-ink text-paper px-6 py-3 rounded-sm text-[15px] hover:bg-teal-dark transition-colors">Log in</button>
   </form>
 
-  <p class="text-sm text-slate mt-6">Don't have an account? <a href="/register.html" class="text-teal hover:text-teal-dark">Register</a></p>
+  <p class="text-sm text-slate mt-6">Don't have an account? <a href="/register.html" id="register-link" class="text-teal hover:text-teal-dark">Register</a></p>
   <p class="text-xs text-slate mt-2">Staff accounts (laboratory, analyst, reviewer, admin) are created by your organization's Super Admin, not through self-registration.</p>
 </main>
 
@@ -58,6 +58,11 @@
 <script src="/assets/auth.js"></script>
 <script src="/assets/layout.js"></script>
 <script>
+  const redirectParam = new URLSearchParams(window.location.search).get('redirect');
+  if (redirectParam) {
+    document.getElementById('register-link').href = '/register.html?redirect=' + encodeURIComponent(redirectParam);
+  }
+
   document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const errorEl = document.getElementById('login-error');
@@ -66,7 +71,8 @@
     const password = document.getElementById('password').value;
     try {
       await loginUser(email, password);
-      window.location.href = '/dashboard.html';
+      const redirect = new URLSearchParams(window.location.search).get('redirect');
+      window.location.href = redirect || '/dashboard.html';
     } catch (err) {
       errorEl.textContent = friendlyAuthError(err);
       errorEl.classList.remove('hidden');

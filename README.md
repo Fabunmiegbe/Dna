@@ -1,16 +1,20 @@
-# GeneMatch — Phase 1–2 build
+# GeneMatch — Phase 1–3 build
 
-Public website plus authentication and dashboard scaffold for GeneMatch, a
-genetic relationship analysis platform. This build covers Phases 1–2 of the
+Public website, authentication, and case/sample management for GeneMatch, a
+genetic relationship analysis platform. This build covers Phases 1–3 of the
 full 13-phase roadmap in the original spec:
 
 - **Phase 1 — Public website:** done, all 15 pages.
 - **Phase 2 — Authentication & dashboard scaffold:** done (Firebase Auth,
   role storage in Firestore, role-gated dashboard nav).
-- **Phase 3 onward** (case management, lab data import, QC, comparison
-  engine, statistics, reporting, hardening, integration, validation,
-  regulatory review, pilot) are **not built yet**. The dashboard shows the
-  roadmap and stubs those sections out on purpose, rather than faking them.
+- **Phase 3 — Case & sample management:** done. `request-test.html` creates
+  a real case (`GM-2026-000001` format); staff can register samples
+  (`SMP-000001` format) against a case and log chain-of-custody events;
+  customers see a simplified status stepper, staff see the full case/sample/
+  custody view. See "Phase 3 details" below.
+- **Phase 4 onward** (lab data import, profile normalization, QC engine,
+  comparison/statistical engine, reporting, hardening, integration,
+  validation, regulatory review, pilot) are **not built yet**.
 
 ## Stack
 
@@ -40,6 +44,8 @@ genematch/
   login.html
   register.html
   dashboard.html            Authenticated shell, Phase 2
+  cases.html                 Case list — Phase 3
+  case.html                  Case detail: status, samples, custody — Phase 3
   partials/
     header.html
     footer.html
@@ -48,8 +54,45 @@ genematch/
     styles.css               Shared tokens/utilities Tailwind CDN doesn't cover
     firebase-config.js       PLACEHOLDER — fill in real project config
     auth.js                  Firebase auth helpers (login, register, role fetch)
-  firestore.rules            Security rules backing the RBAC (Phase 2 scope only)
+    case-data.js             Phase 3: case/sample CRUD, chain of custody, ID generation
+  firestore.rules            Security rules backing the RBAC (Phases 2–3)
 ```
+
+## Phase 3 details
+
+**Flow:** a signed-out visitor fills out `request-test.html`, gets bounced to
+`register.html?redirect=/request-test.html` on submit, and lands back with
+their answers restored (via `sessionStorage`) once they've signed up — then
+submitting actually calls `createCase()`.
+
+**Data model:**
+- `cases/{caseId}` — `GM-{year}-{seq}`, one per test request. Customers can
+  create their own (`createdBy` locked to their own uid, `status` locked to
+  `submitted` at creation) and read it back; only staff can change status or
+  any other field.
+- `samples/{sampleId}` — `SMP-{seq}`, linked to a case. Staff-only, per spec
+  section 6 ("never expose unnecessary personal information through sample
+  labels") — customers see case-level status, not sample-level detail.
+- `custody_events/{eventId}` — append-only log per sample (`COLLECTED`,
+  `RECEIVED`, `TRANSFERRED`, `STORED`, `LABORATORY_PROCESSING`, `TESTING`,
+  `DATA_UPLOADED`, `ANALYSIS`, `REVIEW`, `REPORT_GENERATED`). Registering a
+  sample automatically logs its `COLLECTED` event. `firestore.rules` blocks
+  `update`/`delete` entirely on this collection — the history can only grow.
+- `counters/{id}` — sequence counters for ID generation, incremented inside
+  a Firestore transaction so concurrent submissions can't collide.
+
+**What's simplified for this pass:**
+- No case-manager/technician *assignment* UI yet — cases show status, but
+  "assigned to" fields exist in the data model without a way to set them
+  from the UI. That's a natural next addition once there's a staff directory
+  to pick from.
+- `counters/*` documents are writable by any signed-in user, not locked down
+  to a server-side function — flagged in `case-data.js` and `firestore.rules`
+  as something to revisit in Phase 9 (security hardening). Low risk here
+  since a counter value has no access-control weight of its own.
+- Status transitions are a free-form dropdown for staff, not a validated
+  state machine (e.g. nothing stops jumping from `submitted` straight to
+  `closed`). Worth tightening once the real operational flow is confirmed.
 
 ### Why one page combines four spec pages
 
@@ -112,9 +155,9 @@ hiding is a UX convenience only; `firestore.rules` is the actual boundary.
   anywhere yet. Wire `request-test.html` to `POST /api/cases` once Phase 3's
   case-management API exists.
 
-## What's next (Phase 3)
+## What's next (Phase 4)
 
-Case management: case IDs (`GM-2026-000001` format), case CRUD, sample
-registration (`SMP-000001` format), and chain-of-custody tracking. That's
-the natural next slice, since `request-test.html` and the dashboard's
-"Cases" nav item are both already wired to expect it.
+Laboratory data import: the instrument-adapter architecture (CSV/TSV/JSON/
+XML/FASTA/VCF), validation, and normalization into a versioned internal
+genetic profile format — landing on the `genetic_profiles` collection that
+Phase 5 (profile normalization) and Phase 6 (quality control) build on.

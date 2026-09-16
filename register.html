@@ -57,7 +57,7 @@
     <button type="submit" class="w-full bg-ink text-paper px-6 py-3 rounded-sm text-[15px] hover:bg-teal-dark transition-colors">Create account</button>
   </form>
 
-  <p class="text-sm text-slate mt-6">Already have an account? <a href="/login.html" class="text-teal hover:text-teal-dark">Log in</a></p>
+  <p class="text-sm text-slate mt-6">Already have an account? <a href="/login.html" id="login-link" class="text-teal hover:text-teal-dark">Log in</a></p>
 </main>
 
 <div id="site-footer"></div>
@@ -69,6 +69,11 @@
 <script src="/assets/auth.js"></script>
 <script src="/assets/layout.js"></script>
 <script>
+  const redirectParam = new URLSearchParams(window.location.search).get('redirect');
+  if (redirectParam) {
+    document.getElementById('login-link').href = '/login.html?redirect=' + encodeURIComponent(redirectParam);
+  }
+
   document.getElementById('register-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const errorEl = document.getElementById('register-error');
@@ -81,7 +86,7 @@
         country: document.getElementById('country').value.trim(),
         password: document.getElementById('password').value,
       });
-      window.location.href = '/dashboard.html';
+      window.location.href = redirectParam || '/dashboard.html';
     } catch (err) {
       errorEl.textContent = friendlyAuthError(err);
       errorEl.classList.remove('hidden');

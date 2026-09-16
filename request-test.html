@@ -24,6 +24,10 @@
   <h1 class="font-serif text-4xl leading-tight mb-6">Start a request</h1>
   <p class="text-lg text-slate leading-relaxed mb-10 max-w-2xl">This creates a case and connects you with a laboratory partner for sample collection. No DNA is processed on this page or anywhere on this website; testing happens at the accredited laboratory you're matched with.</p>
 
+  <div id="auth-banner" class="hidden border border-line bg-white rounded-sm p-4 mb-8 text-sm text-slate">
+    You'll need an account to submit a request. <a href="#" id="auth-banner-link" class="text-teal hover:text-teal-dark">Log in or register</a> — we'll bring you right back here with your answers saved.
+  </div>
+
   <div class="grid sm:grid-cols-3 gap-4 mb-14 text-sm">
     <div class="border border-line bg-white rounded-sm p-4">
       <p class="specimen-tag inline-block mb-2">STEP 1</p>
@@ -39,7 +43,7 @@
     </div>
   </div>
 
-  <form class="border border-line bg-white rounded-sm p-6 sm:p-8 space-y-6" onsubmit="return false;">
+  <form id="request-form" class="border border-line bg-white rounded-sm p-6 sm:p-8 space-y-6">
     <div>
       <p class="font-serif text-xl mb-4">Test type</p>
       <div class="grid sm:grid-cols-2 gap-3">
@@ -95,12 +99,104 @@
       <span>I understand that a laboratory will need to collect a physical sample, and that no result will be produced from a photo or image. I have read the <a href="/consent.html" class="text-teal hover:text-teal-dark">consent information</a> page.</span>
     </label>
 
-    <button type="submit" class="bg-ink text-paper px-6 py-3 rounded-sm text-[15px] hover:bg-teal-dark transition-colors">Submit request</button>
-    <p class="text-xs text-slate">This is a UI placeholder. Wire this form to the case-creation API (<span class="font-mono">POST /api/cases</span>) before going live.</p>
+    <p id="request-error" class="text-sm text-fail hidden"></p>
+    <button type="submit" id="request-submit" class="bg-ink text-paper px-6 py-3 rounded-sm text-[15px] hover:bg-teal-dark transition-colors">Submit request</button>
   </form>
+
+  <div id="request-success" class="hidden border border-line bg-white rounded-sm p-6 sm:p-8">
+    <p class="specimen-tag inline-block mb-3" id="success-case-id"></p>
+    <p class="font-serif text-xl mb-2">Request received</p>
+    <p class="text-slate text-[15px] mb-5">Your case has been created. A case manager will follow up about sample collection scheduling.</p>
+    <a href="/dashboard.html" class="inline-block bg-ink text-paper px-6 py-3 rounded-sm text-[15px] hover:bg-teal-dark transition-colors">Go to dashboard</a>
+  </div>
 </main>
 
 <div id="site-footer"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
+<script src="/assets/firebase-config.js"></script>
+<script src="/assets/auth.js"></script>
+<script src="/assets/case-data.js"></script>
 <script src="/assets/layout.js"></script>
+<script>
+  const DRAFT_KEY = 'gm_pending_request';
+  const form = document.getElementById('request-form');
+  const banner = document.getElementById('auth-banner');
+  const bannerLink = document.getElementById('auth-banner-link');
+  let currentUser = null;
+
+  function readForm() {
+    return {
+      testType: form.querySelector('input[name="testType"]:checked').value,
+      fullname: document.getElementById('fullname').value.trim(),
+      reqemail: document.getElementById('reqemail').value.trim(),
+      reqphone: document.getElementById('reqphone').value.trim(),
+      participants: document.getElementById('participants').value,
+      notes: document.getElementById('notes').value.trim(),
+    };
+  }
+
+  function fillForm(data) {
+    if (!data) return;
+    const radio = form.querySelector(`input[name="testType"][value="${data.testType}"]`);
+    if (radio) radio.checked = true;
+    document.getElementById('fullname').value = data.fullname || '';
+    document.getElementById('reqemail').value = data.reqemail || '';
+    document.getElementById('reqphone').value = data.reqphone || '';
+    document.getElementById('participants').value = data.participants || '2';
+    document.getElementById('notes').value = data.notes || '';
+  }
+
+  // Restore a draft if we're bouncing back from login/register.
+  const saved = sessionStorage.getItem(DRAFT_KEY);
+  if (saved) fillForm(JSON.parse(saved));
+
+  auth.onAuthStateChanged((user) => {
+    currentUser = user;
+    banner.classList.toggle('hidden', !!user);
+  });
+  bannerLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(readForm()));
+    window.location.href = '/register.html?redirect=/request-test.html';
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorEl = document.getElementById('request-error');
+    errorEl.classList.add('hidden');
+
+    if (!currentUser) {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(readForm()));
+      window.location.href = '/register.html?redirect=/request-test.html';
+      return;
+    }
+
+    const submitBtn = document.getElementById('request-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+    try {
+      const data = readForm();
+      const caseId = await createCase({
+        caseType: data.testType,
+        requesterUid: currentUser.uid,
+        participantCount: data.participants === '4+' ? 4 : Number(data.participants),
+        notes: data.notes,
+      });
+      sessionStorage.removeItem(DRAFT_KEY);
+      form.classList.add('hidden');
+      document.getElementById('success-case-id').textContent = 'CASE ' + caseId;
+      document.getElementById('request-success').classList.remove('hidden');
+    } catch (err) {
+      console.error(err);
+      errorEl.textContent = 'Something went wrong creating your case. Please try again.';
+      errorEl.classList.remove('hidden');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit request';
+    }
+  });
+</script>
 </body>
 </html>
