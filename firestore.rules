@@ -87,6 +87,15 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    match /genetic_profiles/{profileId} {
+      // Genetic markers are the most sensitive data in the system — staff
+      // only, same as samples, and never deleted (a failed import stays
+      // visible with its FAIL status rather than disappearing, so there's
+      // a record of what was attempted).
+      allow read, create, update: if isStaff();
+      allow delete: if false;
+    }
+
     match /audit_logs/{logId} {
       allow create: if isSignedIn();
       allow read: if isStaff();

@@ -101,6 +101,7 @@
 <script src="/assets/firebase-config.js"></script>
 <script src="/assets/auth.js"></script>
 <script src="/assets/case-data.js"></script>
+<script src="/assets/profile-import.js"></script>
 <script>
   const STATUS_STEPS = [
     { key: 'submitted', label: 'Request submitted' },
@@ -138,6 +139,8 @@
     }).join('');
   }
 
+  const STATUS_CLASS = { PASS: 'status-ok', WARNING: 'status-warn', FAIL: 'status-fail' };
+
   async function renderSamples() {
     const samples = await listSamplesForCase(caseId);
     const listEl = document.getElementById('samples-list');
@@ -148,6 +151,7 @@
     listEl.innerHTML = '';
     for (const s of samples) {
       const events = await listCustodyEvents(s.sampleId);
+      const profiles = await listProfilesForSample(s.sampleId);
       const card = document.createElement('div');
       card.className = 'border border-line bg-white rounded-sm p-5';
       card.innerHTML = `
@@ -156,6 +160,15 @@
           <span class="text-xs text-slate capitalize">${(s.sampleType || '').replace(/_/g, ' ')} · ${(s.storageStatus || '').replace(/_/g, ' ')}</span>
         </div>
         <p class="text-sm text-slate mb-4">Donor ID: ${s.donorParticipantId || '—'} &middot; Location: ${s.storageLocation || '—'}</p>
+
+        <div class="flex items-center justify-between mb-2">
+          <p class="text-xs text-slate">Genetic profiles</p>
+          <a href="/import.html?caseId=${caseId}&sampleId=${s.sampleId}" class="text-xs text-teal hover:text-teal-dark">+ Import profile</a>
+        </div>
+        ${profiles.length
+          ? `<ul class="space-y-1 text-[13.5px] mb-4">${profiles.map((p) => `<li class="flex items-center gap-2"><span class="font-mono text-slate">${p.profileId}</span><span class="${STATUS_CLASS[p.importStatus] || ''}">${p.importStatus}</span><span class="text-slate">· ${p.qualityMetrics ? p.qualityMetrics.totalMarkers : 0} markers</span></li>`).join('')}</ul>`
+          : `<p class="text-[13.5px] text-slate mb-4">No profile imported yet.</p>`}
+
         <p class="text-xs text-slate mb-2">Chain of custody</p>
         <ol class="space-y-1.5 text-[13.5px] border-l border-line pl-4">
           ${events.map((ev) => `<li><span class="font-mono text-slate">${fmtDateTime(ev.timestamp)}</span> — ${CUSTODY_LABEL[ev.eventType] || ev.eventType}${ev.notes ? ' — ' + ev.notes : ''}</li>`).join('')}

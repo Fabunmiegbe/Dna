@@ -1,8 +1,8 @@
-# GeneMatch — Phase 1–3 build
+# GeneMatch — Phase 1–4 build
 
-Public website, authentication, and case/sample management for GeneMatch, a
-genetic relationship analysis platform. This build covers Phases 1–3 of the
-full 13-phase roadmap in the original spec:
+Public website, authentication, case/sample management, and laboratory data
+import for GeneMatch, a genetic relationship analysis platform. This build
+covers Phases 1–4 of the full 13-phase roadmap in the original spec:
 
 - **Phase 1 — Public website:** done, all 15 pages.
 - **Phase 2 — Authentication & dashboard scaffold:** done (Firebase Auth,
@@ -11,9 +11,13 @@ full 13-phase roadmap in the original spec:
   a real case (`GM-2026-000001` format); staff can register samples
   (`SMP-000001` format) against a case and log chain-of-custody events;
   customers see a simplified status stepper, staff see the full case/sample/
-  custody view. See "Phase 3 details" below.
-- **Phase 4 onward** (lab data import, profile normalization, QC engine,
-  comparison/statistical engine, reporting, hardening, integration,
+  custody view.
+- **Phase 4 — Laboratory data import:** done. An instrument-adapter layer
+  parses CSV or JSON genotyping output, validates it, and writes a
+  versioned, normalized profile to `genetic_profiles`. See "Phase 4
+  details" below.
+- **Phase 5 onward** (deeper profile normalization, the full quality-control
+  engine, comparison/statistical engine, reporting, hardening, integration,
   validation, regulatory review, pilot) are **not built yet**.
 
 ## Stack
@@ -45,7 +49,8 @@ genematch/
   register.html
   dashboard.html            Authenticated shell, Phase 2
   cases.html                 Case list — Phase 3
-  case.html                  Case detail: status, samples, custody — Phase 3
+  case.html                  Case detail: status, samples, custody, profiles — Phase 3/4
+  import.html                 Genetic profile import — Phase 4
   partials/
     header.html
     footer.html
@@ -55,8 +60,57 @@ genematch/
     firebase-config.js       PLACEHOLDER — fill in real project config
     auth.js                  Firebase auth helpers (login, register, role fetch)
     case-data.js             Phase 3: case/sample CRUD, chain of custody, ID generation
-  firestore.rules            Security rules backing the RBAC (Phases 2–3)
+    profile-import.js         Phase 4: instrument adapters, validation, normalization
+  firestore.rules            Security rules backing the RBAC (Phases 2–4)
 ```
+
+## Phase 4 details
+
+**Flow:** on a case's detail page, staff click "Import profile" next to a
+sample, which opens `import.html?caseId=...&sampleId=...`. They pick a
+format, name the laboratory, and upload a file. The pipeline runs entirely
+client-side for this MVP:
+
+```
+raw file -> adapter (adaptCsv / adaptJson) -> validateProfile() -> genetic_profiles doc
+```
+
+**CSV format:** a header row with `locus,allele1,allele2` columns, one row
+per marker — the standard shape for STR (short tandem repeat) genotyping
+output, which is what parentage and relationship testing is actually built
+on. **JSON format:** `{ testingMethod, instrument, referenceBuild, markers:
+[{locus, allele1, allele2}] }`.
+
+**Validation** checks for what spec section 11 calls out: missing loci,
+duplicate loci, and malformed allele values. It rolls up to `PASS` /
+`WARNING` / `FAIL`:
+- `FAIL` (no markers found, or a row with no locus name) sets
+  `analysisStatus: 'blocked'` on the profile — it's stored, visible, and
+  flagged, but can't move into analysis until a reviewer resolves it.
+- `WARNING` (missing alleles, duplicates, bad formatting on otherwise usable
+  data) still sets `analysisStatus: 'ready_for_analysis'`, but the warnings
+  stay attached to the profile for whoever reviews it later.
+
+A successful (non-`FAIL`) import also logs a `DATA_UPLOADED` chain-of-custody
+event on the sample automatically.
+
+**Versioning:** every profile stores `profileFormatVersion` (currently `1`).
+If the internal schema changes later, code reading a profile can branch on
+that field instead of guessing.
+
+**What's simplified for this pass — and why it's still called Phase 4, not
+Phase 5/6:** the spec splits "laboratory data import" (Phase 4), "genetic
+profile normalization" (Phase 5), and "the quality-control engine" (Phase 6)
+into separate phases. What's built here is the adapter -> validate ->
+normalize pipeline from spec section 9, plus just enough content-level
+validation to gate whether a profile can be used at all. It is **not** the
+full QC engine from spec section 11 — there's no sample/profile mismatch
+detection, no cross-case quality-metrics dashboard, and the validation rules
+are intentionally simple (regex-level allele format checking, not
+locus-specific expected-range checking). Only CSV and JSON adapters exist;
+TSV, XML, FASTA, VCF, and laboratory-specific adapters are stubbed as a
+comment in `profile-import.js` for when there's a real instrument sample
+file to build them against.
 
 ## Phase 3 details
 
@@ -155,9 +209,12 @@ hiding is a UX convenience only; `firestore.rules` is the actual boundary.
   anywhere yet. Wire `request-test.html` to `POST /api/cases` once Phase 3's
   case-management API exists.
 
-## What's next (Phase 4)
+## What's next (Phase 5)
 
-Laboratory data import: the instrument-adapter architecture (CSV/TSV/JSON/
-XML/FASTA/VCF), validation, and normalization into a versioned internal
-genetic profile format — landing on the `genetic_profiles` collection that
-Phase 5 (profile normalization) and Phase 6 (quality control) build on.
+Genetic profile normalization: the deeper version of the internal profile
+format — reference-genome/build handling, marker metadata beyond STR loci
+(so the schema isn't implicitly CSV-shaped), and profile versioning that
+supports side-by-side comparison of profiles imported under different
+format versions. This sets up Phase 6 (the full quality-control engine) and
+Phase 7 (comparison engine), both of which need a normalized profile to
+operate on rather than raw import output.
