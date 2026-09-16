@@ -1,0 +1,80 @@
+/* GeneMatch shared styles: typography rhythm, focus states, and the small
+   data-specimen motifs used across the marketing site. Tailwind (CDN) handles
+   layout utilities; this file covers what utility classes shouldn't. */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: #16212B;
+}
+
+::selection {
+  background: #1F6F67;
+  color: #F5F6F3;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #1F6F67;
+  outline-offset: 2px;
+}
+
+.font-serif {
+  font-family: 'Newsreader', Georgia, serif;
+}
+
+.font-mono {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+/* Specimen tag: used to display real IDs (case/sample/report codes) inline
+   with copy, the way a lab label or manifest would. */
+.specimen-tag {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.8125rem;
+  letter-spacing: 0.01em;
+  border: 1px solid #DADFDC;
+  border-radius: 2px;
+  padding: 0.1rem 0.45rem;
+  color: #48607A;
+  background: #FFFFFF;
+}
+
+/* Status chips for QC / case states, distinct from the brand teal so results
+   never get visually confused with navigation or CTAs. */
+.status-ok { color: #2E7D5B; }
+.status-warn { color: #B8863A; }
+.status-fail { color: #A6362C; }
+
+/* Marker comparison strip used in the homepage hero and services page:
+   a row of ticks representing loci, some matched, some not, some pending.
+   This is illustrative UI chrome, not real genetic data. */
+.marker-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 3px;
+}
+.marker-cell {
+  height: 22px;
+  border-radius: 1px;
+}
+.marker-cell[data-state="match"] { background: #1F6F67; }
+.marker-cell[data-state="review"] { background: #B8863A; }
+.marker-cell[data-state="pending"] { background: #DADFDC; }
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
